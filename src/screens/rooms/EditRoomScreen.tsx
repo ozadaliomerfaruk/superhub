@@ -27,30 +27,33 @@ import { RoomType } from '../../types';
 import { roomRepository } from '../../services/database';
 import { Button, Input, IconButton } from '../../components/ui';
 import { COLORS, ROOM_TYPES } from '../../constants/theme';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type EditRoomRouteProp = RouteProp<RootStackParamList, 'EditRoom'>;
 
-const roomTypeOptions: { value: RoomType; label: string; icon: React.ComponentType<any> }[] = [
-  { value: 'living_room', label: 'Living Room', icon: Sofa },
-  { value: 'bedroom', label: 'Bedroom', icon: Bed },
-  { value: 'kitchen', label: 'Kitchen', icon: CookingPot },
-  { value: 'bathroom', label: 'Bathroom', icon: Bath },
-  { value: 'garage', label: 'Garage', icon: Car },
-  { value: 'basement', label: 'Basement', icon: ArrowDown },
-  { value: 'attic', label: 'Attic', icon: ArrowUp },
-  { value: 'office', label: 'Office', icon: Monitor },
-  { value: 'dining', label: 'Dining', icon: UtensilsCrossed },
-  { value: 'outdoor', label: 'Outdoor', icon: Trees },
-  { value: 'utility', label: 'Utility', icon: Wrench },
-  { value: 'storage', label: 'Storage', icon: Package },
-  { value: 'other', label: 'Other', icon: Grid3x3 },
+const roomTypeOptions: { value: RoomType; icon: React.ComponentType<any> }[] = [
+  { value: 'living_room', icon: Sofa },
+  { value: 'bedroom', icon: Bed },
+  { value: 'kitchen', icon: CookingPot },
+  { value: 'bathroom', icon: Bath },
+  { value: 'garage', icon: Car },
+  { value: 'basement', icon: ArrowDown },
+  { value: 'attic', icon: ArrowUp },
+  { value: 'office', icon: Monitor },
+  { value: 'dining', icon: UtensilsCrossed },
+  { value: 'outdoor', icon: Trees },
+  { value: 'utility', icon: Wrench },
+  { value: 'storage', icon: Package },
+  { value: 'other', icon: Grid3x3 },
 ];
 
 export function EditRoomScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditRoomRouteProp>();
   const insets = useSafeAreaInsets();
+  const { isDark } = useTheme();
+  const { t } = useTranslation();
   const { roomId } = route.params;
 
   const [name, setName] = useState('');
@@ -75,7 +78,7 @@ export function EditRoomScreen() {
       }
     } catch (error) {
       console.error('Failed to load room:', error);
-      Alert.alert('Error', 'Failed to load room');
+      Alert.alert(t('common.error'), t('property.failedToLoad'));
       navigation.goBack();
     } finally {
       setInitialLoading(false);
@@ -85,7 +88,7 @@ export function EditRoomScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('permissions.photosDescription'));
       return;
     }
 
@@ -103,7 +106,7 @@ export function EditRoomScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a room name');
+      Alert.alert(t('common.required'), t('validation.required'));
       return;
     }
 
@@ -120,7 +123,7 @@ export function EditRoomScreen() {
       navigation.goBack();
     } catch (error) {
       console.error('Failed to update room:', error);
-      Alert.alert('Error', 'Failed to update room. Please try again.');
+      Alert.alert(t('common.error'), t('common.tryAgain'));
     } finally {
       setLoading(false);
     }
@@ -128,24 +131,24 @@ export function EditRoomScreen() {
 
   if (initialLoading) {
     return (
-      <View className="flex-1 bg-white items-center justify-center">
-        <Text className="text-slate-500">Loading...</Text>
+      <View className={`flex-1 items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('common.loading')}</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`} style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
         <IconButton
-          icon={<X size={22} color={COLORS.slate[600]} />}
+          icon={<X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />}
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className="text-lg font-bold text-slate-900">Edit Room</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('room.edit')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -161,11 +164,11 @@ export function EditRoomScreen() {
       >
         {/* Image Picker */}
         <View className="mb-6">
-          <Text className="text-sm font-medium text-slate-700 mb-2">Photo</Text>
+          <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('property.photo')}</Text>
           <TouchableOpacity
             onPress={handlePickImage}
             activeOpacity={0.8}
-            className="h-36 rounded-2xl overflow-hidden bg-slate-100 items-center justify-center"
+            className={`h-36 rounded-2xl overflow-hidden items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
           >
             {imageUri ? (
               <Image
@@ -176,7 +179,7 @@ export function EditRoomScreen() {
             ) : (
               <View className="items-center">
                 <Camera size={28} color={COLORS.slate[400]} />
-                <Text className="text-sm text-slate-500 mt-2">Add a photo</Text>
+                <Text className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('property.tapToAddPhoto')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -184,7 +187,7 @@ export function EditRoomScreen() {
 
         {/* Room Name */}
         <Input
-          label="Room Name"
+          label={t('room.name')}
           placeholder="e.g., Master Bedroom, Kitchen"
           value={name}
           onChangeText={setName}
@@ -193,7 +196,7 @@ export function EditRoomScreen() {
 
         {/* Room Type */}
         <View className="mb-6">
-          <Text className="text-sm font-medium text-slate-700 mb-3">Room Type</Text>
+          <Text className={`text-sm font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('room.type')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {roomTypeOptions.map((item) => {
               const isSelected = type === item.value;
@@ -207,7 +210,7 @@ export function EditRoomScreen() {
                   activeOpacity={0.7}
                   className={`
                     px-3 py-2.5 rounded-xl flex-row items-center border
-                    ${isSelected ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'}
+                    ${isSelected ? 'border-primary-500 bg-primary-50' : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}
                   `}
                 >
                   <IconComponent
@@ -216,10 +219,10 @@ export function EditRoomScreen() {
                   />
                   <Text
                     className={`ml-2 text-sm font-medium ${
-                      isSelected ? 'text-primary-700' : 'text-slate-700'
+                      isSelected ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                     }`}
                   >
-                    {item.label}
+                    {t(`room.types.${item.value}`)}
                   </Text>
                   {isSelected && (
                     <Check size={14} color={COLORS.primary[600]} className="ml-1" />
@@ -232,8 +235,8 @@ export function EditRoomScreen() {
 
         {/* Notes */}
         <Input
-          label="Notes"
-          placeholder="Any additional details about this room..."
+          label={t('maintenance.notes')}
+          placeholder={t('maintenance.notesPlaceholder')}
           value={notes}
           onChangeText={setNotes}
           multiline

@@ -37,56 +37,34 @@ import { ScreenHeader, Card, Button, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { formatDate } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type BillTemplatesRouteProp = RouteProp<RootStackParamList, 'BillTemplates'>;
 
-const FREQUENCIES: Array<{ value: RecurringTemplateWithHistory['frequency']; label: string }> = [
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'biweekly', label: 'Bi-weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'yearly', label: 'Yearly' },
-];
+const FREQUENCY_KEYS = ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'] as const;
 
-const CATEGORIES = [
-  'Electricity',
-  'Water',
-  'Gas',
-  'Internet',
-  'Phone',
-  'Insurance',
-  'HOA',
-  'Property Tax',
-  'Lawn Care',
-  'Pest Control',
-  'Security',
-  'Streaming',
-  'Rent',
-  'Mortgage',
-  'Other',
-];
+const CATEGORY_KEYS = [
+  'electricity', 'water', 'gas', 'internet', 'phone', 'insurance', 'hoa',
+  'propertyTax', 'lawnCare', 'pestControl', 'security', 'streaming', 'rent', 'mortgage', 'other'
+] as const;
 
-const TYPICAL_PAYMENT_DAYS = [
-  '1st of month',
-  '5th of month',
-  '10th of month',
-  '15th of month',
-  '20th of month',
-  '25th of month',
-  'End of month',
-  'Beginning of quarter',
-  'End of quarter',
-  'Beginning of year',
-  'End of year',
-];
+const PAYMENT_DAY_KEYS = [
+  '1st', '5th', '10th', '15th', '20th', '25th',
+  'endOfMonth', 'beginningOfQuarter', 'endOfQuarter', 'beginningOfYear', 'endOfYear'
+] as const;
 
 export function BillTemplatesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<BillTemplatesRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
+  // Translation helpers
+  const getFrequencyLabel = (freq: string) => t(`bills.frequencies.${freq}`);
+  const getCategoryLabel = (cat: string) => t(`bills.categories.${cat}`);
+  const getPaymentDayLabel = (day: string) => t(`bills.paymentDays.${day}`);
 
   const [property, setProperty] = useState<Property | null>(null);
   const [templates, setTemplates] = useState<RecurringTemplateWithHistory[]>([]);
@@ -162,11 +140,11 @@ export function BillTemplatesScreen() {
 
   const handleSave = async () => {
     if (!formName.trim()) {
-      Alert.alert('Error', 'Please enter a name');
+      Alert.alert(t('common.error'), t('bills.alerts.enterName'));
       return;
     }
     if (!formCategory) {
-      Alert.alert('Error', 'Please select a category');
+      Alert.alert(t('common.error'), t('bills.alerts.selectCategory'));
       return;
     }
 
@@ -193,7 +171,7 @@ export function BillTemplatesScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to save:', error);
-      Alert.alert('Error', 'Failed to save recurring payment');
+      Alert.alert(t('common.error'), t('bills.alerts.saveFailed'));
     }
   };
 
@@ -209,18 +187,18 @@ export function BillTemplatesScreen() {
       }
     } catch (error) {
       console.error('Failed to toggle:', error);
-      Alert.alert('Error', 'Failed to update');
+      Alert.alert(t('common.error'), t('bills.alerts.updateFailed'));
     }
   };
 
   const handleDelete = (template: RecurringTemplateWithHistory) => {
     Alert.alert(
-      'Delete Recurring Payment',
-      `Are you sure you want to delete "${template.name}"? This will also delete all payment history.`,
+      t('bills.deletePaymentTitle'),
+      t('bills.deletePaymentMessage', { name: template.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -230,7 +208,7 @@ export function BillTemplatesScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete:', error);
-              Alert.alert('Error', 'Failed to delete');
+              Alert.alert(t('common.error'), t('bills.alerts.deleteFailed'));
             }
           },
         },
@@ -252,11 +230,11 @@ export function BillTemplatesScreen() {
 
   const handleAddPayment = async () => {
     if (!paymentAmount || isNaN(parseFloat(paymentAmount))) {
-      Alert.alert('Error', 'Please enter a valid amount');
+      Alert.alert(t('common.error'), t('bills.alerts.enterValidAmount'));
       return;
     }
     if (!selectedTemplate) {
-      Alert.alert('Error', 'No template selected');
+      Alert.alert(t('common.error'), t('bills.alerts.noTemplateSelected'));
       return;
     }
 
@@ -290,18 +268,18 @@ export function BillTemplatesScreen() {
       loadData(); // Refresh main list
     } catch (error: any) {
       console.error('Failed to add payment:', error);
-      Alert.alert('Error', `Failed to record payment: ${error?.message || 'Unknown error'}`);
+      Alert.alert(t('common.error'), t('bills.alerts.paymentFailed'));
     }
   };
 
   const handleDeletePayment = (payment: RecurringPaymentHistory) => {
     Alert.alert(
-      'Delete Payment Record',
-      'Are you sure you want to delete this payment record?',
+      t('bills.deletePaymentRecord'),
+      t('bills.deleteRecordMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -333,17 +311,13 @@ export function BillTemplatesScreen() {
     }
   };
 
-  const getFrequencyLabel = (freq: RecurringTemplateWithHistory['frequency']) => {
-    return FREQUENCIES.find((f) => f.value === freq)?.label || freq;
-  };
-
   const activeCount = templates.filter(t => t.isActive).length;
   const inactiveCount = templates.filter(t => !t.isActive).length;
 
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Recurring Payments"
+        title={t('bills.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -374,15 +348,15 @@ export function BillTemplatesScreen() {
           <View className="flex-row gap-3">
             <Card variant="filled" padding="md" className={`flex-1 ${isDark ? 'bg-green-900/30 border-green-800' : 'bg-green-50 border-green-100'} border`}>
               <Text className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>{activeCount}</Text>
-              <Text className={`text-xs mt-0.5 ${isDark ? 'text-green-500' : 'text-green-600'}`}>Active</Text>
+              <Text className={`text-xs mt-0.5 ${isDark ? 'text-green-500' : 'text-green-600'}`}>{t('bills.active')}</Text>
             </Card>
             <Card variant="filled" padding="md" className={`flex-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'} border`}>
               <Text className={`text-2xl font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{inactiveCount}</Text>
-              <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Inactive</Text>
+              <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('bills.inactive')}</Text>
             </Card>
             <Card variant="filled" padding="md" className={`flex-1 ${isDark ? 'bg-blue-900/30 border-blue-800' : 'bg-blue-50 border-blue-100'} border`}>
               <Text className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>{templates.length}</Text>
-              <Text className={`text-xs mt-0.5 ${isDark ? 'text-blue-500' : 'text-blue-600'}`}>Total</Text>
+              <Text className={`text-xs mt-0.5 ${isDark ? 'text-blue-500' : 'text-blue-600'}`}>{t('bills.total')}</Text>
             </Card>
           </View>
         </View>
@@ -396,13 +370,13 @@ export function BillTemplatesScreen() {
                   <Receipt size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
                 <Text className={`text-lg font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No recurring payments
+                  {t('bills.noPayments')}
                 </Text>
                 <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Track your regular bills and payments here
+                  {t('bills.trackBills')}
                 </Text>
                 <Button
-                  title="Add First Payment"
+                  title={t('bills.addFirst')}
                   onPress={() => setShowFormModal(true)}
                   variant="primary"
                   className="mt-4"
@@ -447,7 +421,7 @@ export function BillTemplatesScreen() {
                             {template.name}
                           </Text>
                           {!template.isActive && (
-                            <Badge label="Inactive" variant="default" size="sm" className="ml-2" />
+                            <Badge label={t('bills.inactive')} variant="default" size="sm" className="ml-2" />
                           )}
                         </View>
 
@@ -462,19 +436,19 @@ export function BillTemplatesScreen() {
                             <View className="flex-row items-center">
                               <Calendar size={12} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                               <Text className={`text-sm ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                {template.typicalPaymentDay}
+                                {getPaymentDayLabel(template.typicalPaymentDay)}
                               </Text>
                             </View>
                           )}
                         </View>
 
                         <View className="flex-row items-center mt-2 gap-2">
-                          <Badge label={template.category} variant="info" size="sm" />
+                          <Badge label={getCategoryLabel(template.category)} variant="info" size="sm" />
                           {template.paymentCount > 0 && (
                             <View className={`flex-row items-center px-2 py-0.5 rounded-full ${isDark ? 'bg-green-900/40' : 'bg-green-50'}`}>
                               <History size={10} color={COLORS.success} />
                               <Text className={`text-xs ml-1 ${isDark ? 'text-green-400' : 'text-green-700'}`}>
-                                {template.paymentCount} payment{template.paymentCount !== 1 ? 's' : ''}
+                                {template.paymentCount} {template.paymentCount !== 1 ? t('bills.payments') : t('bills.payment')}
                               </Text>
                             </View>
                           )}
@@ -482,7 +456,7 @@ export function BillTemplatesScreen() {
 
                         {template.lastPaymentDate && (
                           <Text className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            Last paid: {formatDate(template.lastPaymentDate)}
+                            {t('bills.lastPaid')}: {formatDate(template.lastPaymentDate)}
                             {template.lastPaymentAmount && ` - ${formatCurrency(template.lastPaymentAmount)}`}
                           </Text>
                         )}
@@ -511,7 +485,7 @@ export function BillTemplatesScreen() {
               <X size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
             <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              {editingTemplate ? 'Edit Payment' : 'New Recurring Payment'}
+              {editingTemplate ? t('bills.editPayment') : t('bills.newPayment')}
             </Text>
             <TouchableOpacity onPress={handleSave} activeOpacity={0.7}>
               <Check size={24} color={COLORS.primary[600]} />
@@ -522,11 +496,11 @@ export function BillTemplatesScreen() {
             <View className="gap-5 pb-10">
               {/* Name */}
               <View>
-                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Name *</Text>
+                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('bills.form.name')} *</Text>
                 <TextInput
                   value={formName}
                   onChangeText={setFormName}
-                  placeholder="e.g., Electric Bill, Netflix"
+                  placeholder={t('bills.form.namePlaceholder')}
                   className={`border rounded-xl px-4 py-3.5 text-base ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
                   placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                 />
@@ -534,18 +508,18 @@ export function BillTemplatesScreen() {
 
               {/* Category */}
               <View>
-                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Category *</Text>
+                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('bills.form.category')} *</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ gap: 8 }}
                 >
-                  {CATEGORIES.map((cat) => (
+                  {CATEGORY_KEYS.map((catKey) => (
                     <TouchableOpacity
-                      key={cat}
-                      onPress={() => setFormCategory(cat)}
+                      key={catKey}
+                      onPress={() => setFormCategory(catKey)}
                       className={`px-4 py-2.5 rounded-full ${
-                        formCategory === cat
+                        formCategory === catKey
                           ? 'bg-primary-500'
                           : isDark ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'
                       }`}
@@ -553,10 +527,10 @@ export function BillTemplatesScreen() {
                     >
                       <Text
                         className={`text-sm font-medium ${
-                          formCategory === cat ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
+                          formCategory === catKey ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
                         }`}
                       >
-                        {cat}
+                        {getCategoryLabel(catKey)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -565,14 +539,14 @@ export function BillTemplatesScreen() {
 
               {/* Frequency */}
               <View>
-                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Frequency *</Text>
+                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('bills.form.frequency')} *</Text>
                 <View className="flex-row flex-wrap gap-2">
-                  {FREQUENCIES.map((freq) => (
+                  {FREQUENCY_KEYS.map((freqKey) => (
                     <TouchableOpacity
-                      key={freq.value}
-                      onPress={() => setFormFrequency(freq.value)}
+                      key={freqKey}
+                      onPress={() => setFormFrequency(freqKey as RecurringTemplateWithHistory['frequency'])}
                       className={`px-4 py-2.5 rounded-xl ${
-                        formFrequency === freq.value
+                        formFrequency === freqKey
                           ? 'bg-primary-500'
                           : isDark ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'
                       }`}
@@ -580,10 +554,10 @@ export function BillTemplatesScreen() {
                     >
                       <Text
                         className={`text-sm font-medium ${
-                          formFrequency === freq.value ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
+                          formFrequency === freqKey ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
                         }`}
                       >
-                        {freq.label}
+                        {getFrequencyLabel(freqKey)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -592,18 +566,18 @@ export function BillTemplatesScreen() {
 
               {/* Typical Payment Day */}
               <View>
-                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Typical Payment Day (optional)</Text>
+                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('bills.form.typicalPaymentDay')}</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ gap: 8 }}
                 >
-                  {TYPICAL_PAYMENT_DAYS.map((day) => (
+                  {PAYMENT_DAY_KEYS.map((dayKey) => (
                     <TouchableOpacity
-                      key={day}
-                      onPress={() => setFormTypicalPaymentDay(formTypicalPaymentDay === day ? '' : day)}
+                      key={dayKey}
+                      onPress={() => setFormTypicalPaymentDay(formTypicalPaymentDay === dayKey ? '' : dayKey)}
                       className={`px-4 py-2.5 rounded-full ${
-                        formTypicalPaymentDay === day
+                        formTypicalPaymentDay === dayKey
                           ? 'bg-amber-500'
                           : isDark ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'
                       }`}
@@ -611,10 +585,10 @@ export function BillTemplatesScreen() {
                     >
                       <Text
                         className={`text-sm font-medium ${
-                          formTypicalPaymentDay === day ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
+                          formTypicalPaymentDay === dayKey ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
                         }`}
                       >
-                        {day}
+                        {getPaymentDayLabel(dayKey)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -637,7 +611,7 @@ export function BillTemplatesScreen() {
             <TouchableOpacity onPress={() => setShowDetailModal(false)} activeOpacity={0.7}>
               <X size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
-            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Payment Details</Text>
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('bills.paymentDetails')}</Text>
             <View className="w-6" />
           </View>
 
@@ -656,7 +630,7 @@ export function BillTemplatesScreen() {
                   <View className="flex-1 ml-4">
                     <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedTemplate.name}</Text>
                     <View className="flex-row items-center mt-1 gap-2">
-                      <Badge label={selectedTemplate.category} variant="info" size="sm" />
+                      <Badge label={getCategoryLabel(selectedTemplate.category)} variant="info" size="sm" />
                       <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{getFrequencyLabel(selectedTemplate.frequency)}</Text>
                     </View>
                   </View>
@@ -666,7 +640,7 @@ export function BillTemplatesScreen() {
                   <View className={`flex-row items-center mt-4 px-3 py-2 rounded-lg ${isDark ? 'bg-amber-900/30' : 'bg-amber-50'}`}>
                     <Clock size={16} color={COLORS.warning} />
                     <Text className={`text-sm ml-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
-                      Usually paid: {selectedTemplate.typicalPaymentDay}
+                      {t('bills.usuallyPaid')}: {getPaymentDayLabel(selectedTemplate.typicalPaymentDay)}
                     </Text>
                   </View>
                 )}
@@ -685,12 +659,12 @@ export function BillTemplatesScreen() {
                     {selectedTemplate.isActive ? (
                       <>
                         <ToggleRight size={20} color={COLORS.success} />
-                        <Text className={`text-sm font-semibold ml-2 ${isDark ? 'text-green-400' : 'text-green-700'}`}>Active</Text>
+                        <Text className={`text-sm font-semibold ml-2 ${isDark ? 'text-green-400' : 'text-green-700'}`}>{t('bills.active')}</Text>
                       </>
                     ) : (
                       <>
                         <ToggleLeft size={20} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
-                        <Text className={`text-sm font-semibold ml-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Inactive</Text>
+                        <Text className={`text-sm font-semibold ml-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('bills.inactive')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -719,7 +693,7 @@ export function BillTemplatesScreen() {
               {/* Add Payment Button */}
               <View className="px-5 py-4">
                 <Button
-                  title="Record Payment"
+                  title={t('bills.recordPayment')}
                   onPress={() => {
                     setShowDetailModal(false);
                     setTimeout(() => setShowAddPaymentModal(true), 300);
@@ -732,16 +706,16 @@ export function BillTemplatesScreen() {
               {/* Payment History */}
               <View className="px-5 pb-8">
                 <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Payment History ({paymentHistory.length})
+                  {t('bills.paymentHistory')} ({paymentHistory.length})
                 </Text>
 
                 {paymentHistory.length === 0 ? (
                   <Card variant="filled" padding="lg">
                     <View className="items-center py-4">
                       <History size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
-                      <Text className={`font-medium mt-3 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>No payments recorded</Text>
+                      <Text className={`font-medium mt-3 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('bills.noPaymentsRecorded')}</Text>
                       <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Record your first payment to start tracking
+                        {t('bills.recordFirstPayment')}
                       </Text>
                     </View>
                   </Card>
@@ -803,7 +777,7 @@ export function BillTemplatesScreen() {
             >
               <X size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
-            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Record Payment</Text>
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('bills.recordPayment')}</Text>
             <TouchableOpacity onPress={handleAddPayment} activeOpacity={0.7}>
               <Check size={24} color={COLORS.primary[600]} />
             </TouchableOpacity>
@@ -813,7 +787,7 @@ export function BillTemplatesScreen() {
             <View className="gap-5">
               {/* Amount */}
               <View>
-                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Amount Paid *</Text>
+                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('bills.amountPaid')} *</Text>
                 <View className={`flex-row items-center border rounded-xl px-4 ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
                   <DollarSign size={20} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                   <TextInput
@@ -829,7 +803,7 @@ export function BillTemplatesScreen() {
 
               {/* Date */}
               <View>
-                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Payment Date *</Text>
+                <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('bills.paymentDate')} *</Text>
                 <TouchableOpacity
                   onPress={() => setShowDatePicker(true)}
                   className={`border rounded-xl px-4 py-3.5 flex-row items-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}

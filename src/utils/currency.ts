@@ -106,3 +106,62 @@ export function formatNumber(num: number, decimals: number = 0): string {
     maximumFractionDigits: decimals,
   }).format(num);
 }
+
+// Format input value while typing (for currency input fields)
+export function formatCurrencyInput(value: string, currency?: string): string {
+  // Remove all non-numeric characters except decimal separators
+  const cleanValue = value.replace(/[^\d.,]/g, '');
+
+  // Get the locale for current currency
+  const curr = currency || cachedCurrency;
+  const loc = CURRENCY_LOCALES[curr] || 'en-US';
+
+  // Determine decimal separator based on locale
+  const isEuropeanFormat = ['de-DE', 'tr-TR', 'de-CH', 'pt-BR', 'es-MX'].includes(loc);
+  const decimalSeparator = isEuropeanFormat ? ',' : '.';
+  const thousandSeparator = isEuropeanFormat ? '.' : ',';
+
+  // Normalize input to use period as decimal separator for parsing
+  let normalized = cleanValue;
+  if (isEuropeanFormat) {
+    // European: 1.234,56 -> 1234.56
+    normalized = cleanValue.replace(/\./g, '').replace(',', '.');
+  } else {
+    // American: 1,234.56 -> 1234.56
+    normalized = cleanValue.replace(/,/g, '');
+  }
+
+  // Parse the number
+  const num = parseFloat(normalized);
+  if (isNaN(num)) return '';
+
+  // Format with locale
+  return new Intl.NumberFormat(loc, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
+// Parse formatted currency string back to number
+export function parseCurrencyInput(value: string, currency?: string): number {
+  if (!value) return 0;
+
+  // Get the locale for current currency
+  const curr = currency || cachedCurrency;
+  const loc = CURRENCY_LOCALES[curr] || 'en-US';
+
+  // Determine format type
+  const isEuropeanFormat = ['de-DE', 'tr-TR', 'de-CH', 'pt-BR', 'es-MX'].includes(loc);
+
+  // Normalize to standard number format
+  let normalized = value;
+  if (isEuropeanFormat) {
+    // European: 1.234,56 -> 1234.56
+    normalized = value.replace(/\./g, '').replace(',', '.');
+  } else {
+    // American: 1,234.56 -> 1234.56
+    normalized = value.replace(/,/g, '');
+  }
+
+  return parseFloat(normalized) || 0;
+}

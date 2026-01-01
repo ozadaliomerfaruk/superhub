@@ -20,7 +20,7 @@ import { workerRepository } from '../../services/database';
 import { EmptyState, IconButton, Card, PressableCard, Avatar } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,6 +28,7 @@ export function WorkersScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,8 +87,8 @@ export function WorkersScreen() {
       <View className={`px-5 pt-4 pb-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} border-b`}>
         <View className="flex-row items-center justify-between mb-3">
           <View>
-            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Workers</Text>
-            <Text className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Contractors & service providers</Text>
+            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('worker.title')}</Text>
+            <Text className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.subtitle')}</Text>
           </View>
           <View className="flex-row gap-2">
             <IconButton
@@ -109,13 +110,13 @@ export function WorkersScreen() {
             <View className={`flex-1 flex-row items-center rounded-xl px-3 py-2.5 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
               <Users size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
               <Text className={`text-sm font-semibold ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                {workers.length} {workers.length === 1 ? 'Worker' : 'Workers'}
+                {workers.length} {workers.length === 1 ? t('worker.workerSingular') : t('worker.workerPlural')}
               </Text>
             </View>
             <View className={`flex-1 flex-row items-center rounded-xl px-3 py-2.5 ${isDark ? 'bg-primary-900/30' : 'bg-primary-50'}`}>
               <DollarSign size={18} color={COLORS.primary[isDark ? 400 : 600]} />
               <Text className={`text-sm font-semibold ml-1 ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>
-                {formatCurrency(totalPaid)} paid
+                {formatCurrency(totalPaid)} {t('worker.paid')}
               </Text>
             </View>
           </View>
@@ -138,9 +139,9 @@ export function WorkersScreen() {
           <View className="flex-1 pt-12 px-8">
             <EmptyState
               icon={<Users size={44} color={COLORS.slate[400]} />}
-              title="No workers yet"
-              description="Add contractors, plumbers, electricians, and other service providers to track their work and payments"
-              actionLabel="Add Your First Worker"
+              title={t('worker.emptyTitle')}
+              description={t('worker.emptyDescription')}
+              actionLabel={t('worker.addFirst')}
               onAction={handleAddWorker}
             />
           </View>
@@ -236,7 +237,7 @@ export function WorkersScreen() {
                     )}
                   </View>
                   <Text className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {formatCurrency(worker.totalPaid)} total
+                    {formatCurrency(worker.totalPaid)} {t('worker.total')}
                   </Text>
                 </View>
               </PressableCard>

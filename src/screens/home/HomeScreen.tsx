@@ -38,8 +38,9 @@ import { getDaysUntil } from '../../utils/date';
 import { PressableCard, IconButton, EmptyState, Button, Card } from '../../components/ui';
 import { COLORS, PROPERTY_TYPES, SHADOWS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 import { format } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -207,12 +208,16 @@ export function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t, language } = useTranslation();
   const [properties, setProperties] = useState<Property[]>([]);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
   const [expiringWarranties, setExpiringWarranties] = useState<Asset[]>([]);
   const [pendingTasks, setPendingTasks] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Date locale
+  const dateLocale = language === 'tr' ? tr : enUS;
 
   // Animations
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -276,9 +281,9 @@ export function HomeScreen() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return t('home.greeting.morning');
+    if (hour < 18) return t('home.greeting.afternoon');
+    return t('home.greeting.evening');
   };
 
   const totalAlerts = expiringWarranties.length;
@@ -347,7 +352,7 @@ export function HomeScreen() {
           <View className="flex-row items-center mt-4 bg-white/15 self-start px-3 py-1.5 rounded-full">
             <Calendar size={14} color="rgba(255,255,255,0.9)" />
             <Text className="text-sm font-medium text-white/90 ml-1.5">
-              {format(new Date(), 'EEEE, MMMM d')}
+              {format(new Date(), 'EEEE, d MMMM', { locale: dateLocale })}
             </Text>
           </View>
         </Animated.View>
@@ -375,9 +380,9 @@ export function HomeScreen() {
           <View className={`flex-1 pt-8 mx-5 rounded-3xl ${isDark ? 'bg-slate-800' : 'bg-white'}`} style={SHADOWS.lg}>
             <EmptyState
               icon={<Home size={52} color={COLORS.primary[500]} />}
-              title="Welcome to HomeTrack!"
-              description="Start by adding your first property to track maintenance, expenses, and keep everything organized"
-              actionLabel="Add Your First Property"
+              title={t('home.welcome')}
+              description={t('home.welcomeDescription')}
+              actionLabel={t('home.addFirstProperty')}
               onAction={handleAddProperty}
             />
           </View>
@@ -388,7 +393,7 @@ export function HomeScreen() {
               <View className="flex-row gap-3 mb-5">
                 <AnimatedStatCard
                   icon={<Home size={20} color={COLORS.primary[600]} />}
-                  label="Properties"
+                  label={t('home.properties')}
                   value={properties.length.toString()}
                   color={COLORS.primary[600]}
                   delay={0}
@@ -396,7 +401,7 @@ export function HomeScreen() {
                 />
                 <AnimatedStatCard
                   icon={<TrendingUp size={20} color={COLORS.info} />}
-                  label="This Month"
+                  label={t('home.thisMonth')}
                   value={formatCurrency(monthlyTotal)}
                   color={COLORS.info}
                   delay={100}
@@ -411,7 +416,7 @@ export function HomeScreen() {
                 <View className="flex-row items-center mb-3">
                   <Zap size={16} color={COLORS.warning} />
                   <Text className={`text-sm font-bold uppercase tracking-wide ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    Needs Attention
+                    {t('home.needsAttention')}
                   </Text>
                 </View>
                 <View className={`rounded-2xl overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`} style={SHADOWS.md}>
@@ -430,10 +435,10 @@ export function HomeScreen() {
                       </LinearGradient>
                       <View className="flex-1 ml-3">
                         <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          Warranty Expiring
+                          {t('home.warrantyExpiring')}
                         </Text>
                         <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {expiringWarranties[0].name} • {expiringWarranties[0].warrantyEndDate ? getDaysUntil(expiringWarranties[0].warrantyEndDate) : 0} days left
+                          {expiringWarranties[0].name} • {expiringWarranties[0].warrantyEndDate ? getDaysUntil(expiringWarranties[0].warrantyEndDate) : 0} {t('home.daysLeft')}
                         </Text>
                       </View>
                       <View className="bg-amber-100 px-2.5 py-1 rounded-full">
@@ -457,10 +462,10 @@ export function HomeScreen() {
                       </LinearGradient>
                       <View className="flex-1 ml-3">
                         <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          Pending Tasks
+                          {t('home.pendingTasks')}
                         </Text>
                         <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {pendingTasks} maintenance task{pendingTasks > 1 ? 's' : ''} to complete
+                          {pendingTasks} {t('home.tasksToComplete')}
                         </Text>
                       </View>
                       <View className="bg-blue-100 px-2.5 py-1 rounded-full">
@@ -476,12 +481,12 @@ export function HomeScreen() {
             {properties.length > 0 && (
               <View className="mb-5">
                 <Text className={`text-sm font-bold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  Quick Actions
+                  {t('home.quickActions')}
                 </Text>
                 <View className="gap-3">
                   <QuickActionButton
                     icon={<BarChart3 size={20} color="#fff" />}
-                    label="View Reports"
+                    label={t('home.viewReports')}
                     colors={['#3b82f6', '#2563eb']}
                     onPress={() => navigation.navigate('Reports')}
                     delay={0}
@@ -495,7 +500,7 @@ export function HomeScreen() {
               <View className="mb-4">
                 <View className="flex-row items-center justify-between mb-3">
                   <Text className={`text-sm font-bold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    Your Properties
+                    {t('home.properties')}
                   </Text>
                   <TouchableOpacity
                     onPress={handleAddProperty}
@@ -503,7 +508,7 @@ export function HomeScreen() {
                     activeOpacity={0.7}
                   >
                     <Plus size={16} color={COLORS.primary[600]} />
-                    <Text className="text-sm font-semibold text-primary-600 ml-1">Add</Text>
+                    <Text className="text-sm font-semibold text-primary-600 ml-1">{t('common.add')}</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -540,6 +545,7 @@ const PropertyCard = ({
   isDark: boolean;
   index: number;
 }) => {
+  const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
@@ -579,6 +585,7 @@ const PropertyCard = ({
   };
 
   const propertyConfig = PROPERTY_TYPES[property.type] || PROPERTY_TYPES.home;
+  const propertyTypeLabel = t(`property.types.${property.type}`);
 
   return (
     <Animated.View
@@ -658,12 +665,12 @@ const PropertyCard = ({
                 className="text-xs font-bold"
                 style={{ color: propertyConfig.color }}
               >
-                {propertyConfig.label}
+                {propertyTypeLabel}
               </Text>
             </View>
             <View className="flex-row items-center">
               <Text className={`text-sm font-semibold mr-1 ${isDark ? 'text-primary-400' : 'text-primary-600'}`}>
-                View Details
+                {t('common.viewDetails')}
               </Text>
               <ChevronRight size={16} color={COLORS.primary[isDark ? 400 : 600]} />
             </View>

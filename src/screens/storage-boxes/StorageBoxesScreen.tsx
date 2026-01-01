@@ -31,7 +31,7 @@ import { StorageBox, Property } from '../../types';
 import { storageBoxRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card, Button } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type StorageBoxesRouteProp = RouteProp<RootStackParamList, 'StorageBoxes'>;
@@ -41,6 +41,7 @@ export function StorageBoxesScreen() {
   const route = useRoute<StorageBoxesRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [boxes, setBoxes] = useState<StorageBox[]>([]);
@@ -108,7 +109,7 @@ export function StorageBoxesScreen() {
 
   const handleSave = async () => {
     if (!formName.trim() || !formLocation.trim() || !formContents.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('common.error'), t('storage.alerts.fillRequired'));
       return;
     }
 
@@ -131,7 +132,7 @@ export function StorageBoxesScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to save storage box:', error);
-      Alert.alert('Error', 'Failed to save storage box');
+      Alert.alert(t('common.error'), t('storage.alerts.saveFailed'));
     }
   };
 
@@ -145,12 +146,12 @@ export function StorageBoxesScreen() {
 
   const handleDelete = (box: StorageBox) => {
     Alert.alert(
-      'Delete Storage Box',
-      `Are you sure you want to delete "${box.name}"?`,
+      t('storage.deleteBox'),
+      t('storage.deleteConfirm', { name: box.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -158,7 +159,7 @@ export function StorageBoxesScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete storage box:', error);
-              Alert.alert('Error', 'Failed to delete storage box');
+              Alert.alert(t('common.error'), t('storage.alerts.deleteFailed'));
             }
           },
         },
@@ -181,7 +182,7 @@ export function StorageBoxesScreen() {
         loadData();
       } catch (error) {
         console.error('Failed to add photo:', error);
-        Alert.alert('Error', 'Failed to add photo');
+        Alert.alert(t('common.error'), t('storage.alerts.photoFailed'));
       }
     }
   };
@@ -196,7 +197,7 @@ export function StorageBoxesScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Storage Boxes"
+        title={t('storage.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -232,7 +233,7 @@ export function StorageBoxesScreen() {
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
-                placeholder="Search boxes and contents..."
+                placeholder={t('storage.searchPlaceholder')}
                 className={`flex-1 ml-3 text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
                 placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
               />
@@ -251,7 +252,7 @@ export function StorageBoxesScreen() {
             <Card variant="default" padding="md">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {editingId ? 'Edit Storage Box' : 'Add Storage Box'}
+                  {editingId ? t('storage.editBox') : t('storage.addBox')}
                 </Text>
                 <TouchableOpacity onPress={resetForm} activeOpacity={0.7}>
                   <X size={22} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
@@ -260,33 +261,33 @@ export function StorageBoxesScreen() {
 
               <View className="gap-3">
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Box Name/Number *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('storage.boxName')} *</Text>
                   <TextInput
                     value={formName}
                     onChangeText={setFormName}
-                    placeholder="e.g., Box #1, Holiday Decorations"
+                    placeholder={t('storage.boxNamePlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                   />
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Storage Location *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('storage.location')} *</Text>
                   <TextInput
                     value={formLocation}
                     onChangeText={setFormLocation}
-                    placeholder="e.g., Garage, Attic, Basement"
+                    placeholder={t('storage.locationPlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                   />
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Contents *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('storage.contents')} *</Text>
                   <TextInput
                     value={formContents}
                     onChangeText={setFormContents}
-                    placeholder="List what's inside this box..."
+                    placeholder={t('storage.contentsPlaceholder')}
                     multiline
                     numberOfLines={4}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
@@ -297,7 +298,7 @@ export function StorageBoxesScreen() {
                 </View>
 
                 <Button
-                  title={editingId ? 'Update Box' : 'Save Box'}
+                  title={editingId ? t('storage.updateBox') : t('storage.saveBox')}
                   onPress={handleSave}
                   variant="primary"
                   icon={<Check size={18} color="#ffffff" />}
@@ -316,13 +317,13 @@ export function StorageBoxesScreen() {
                   <Package size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
                 <Text className={`text-lg font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No storage boxes tracked
+                  {t('storage.noBoxes')}
                 </Text>
                 <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Track what's in your storage boxes so you never have to dig through them again
+                  {t('storage.noBoxesDescription')}
                 </Text>
                 <Button
-                  title="Add Storage Box"
+                  title={t('storage.addBox')}
                   onPress={() => setShowAddForm(true)}
                   variant="primary"
                   className="mt-4"
@@ -337,10 +338,10 @@ export function StorageBoxesScreen() {
               <View className="items-center py-6">
                 <Search size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 <Text className={`text-base font-semibold text-center mt-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No boxes match "{searchQuery}"
+                  {t('storage.noResults', { query: searchQuery })}
                 </Text>
                 <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Try a different search term
+                  {t('storage.tryDifferent')}
                 </Text>
               </View>
             </Card>
@@ -385,7 +386,7 @@ export function StorageBoxesScreen() {
                           <View className="flex-row items-center mb-1.5">
                             <FileText size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                             <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                              Contents
+                              {t('storage.contents')}
                             </Text>
                           </View>
                           <Text className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
@@ -410,7 +411,7 @@ export function StorageBoxesScreen() {
                           >
                             <Camera size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
                             <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                              {box.imageUri ? 'Update' : 'Photo'}
+                              {box.imageUri ? t('storage.update') : t('storage.photo')}
                             </Text>
                           </TouchableOpacity>
                           <TouchableOpacity

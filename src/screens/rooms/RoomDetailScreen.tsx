@@ -40,7 +40,7 @@ import { IconButton, PressableCard, Button } from '../../components/ui';
 import { COLORS, ROOM_TYPES, ASSET_CATEGORIES, SHADOWS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { format, parseISO, isToday, isYesterday, differenceInDays } from 'date-fns';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RoomDetailRouteProp = RouteProp<RootStackParamList, 'RoomDetail'>;
@@ -50,6 +50,7 @@ export function RoomDetailScreen() {
   const route = useRoute<RoomDetailRouteProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [room, setRoom] = useState<Room | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -92,7 +93,7 @@ export function RoomDetailScreen() {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Edit Room', 'Delete Room'],
+          options: [t('common.cancel'), t('room.edit'), t('room.delete')],
           destructiveButtonIndex: 2,
           cancelButtonIndex: 0,
         },
@@ -105,25 +106,25 @@ export function RoomDetailScreen() {
         }
       );
     } else {
-      Alert.alert('Room Options', 'Choose an action', [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('property.options'), t('property.chooseAction'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Edit Room',
+          text: t('room.edit'),
           onPress: () => navigation.navigate('EditRoom', { roomId: room!.id }),
         },
-        { text: 'Delete Room', style: 'destructive', onPress: handleDelete },
+        { text: t('room.delete'), style: 'destructive', onPress: handleDelete },
       ]);
     }
   };
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Room',
+      t('room.delete'),
       'Are you sure you want to delete this room? Assets in this room will be unassigned. This action cannot be undone.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -131,7 +132,7 @@ export function RoomDetailScreen() {
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete room:', error);
-              Alert.alert('Error', 'Failed to delete room. Please try again.');
+              Alert.alert(t('common.error'), t('common.tryAgain'));
             }
           },
         },
@@ -141,8 +142,8 @@ export function RoomDetailScreen() {
 
   const formatExpenseDate = (dateString: string) => {
     const date = parseISO(dateString);
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
+    if (isToday(date)) return t('dates.today');
+    if (isYesterday(date)) return t('dates.yesterday');
     return format(date, 'MMM d');
   };
 
@@ -173,7 +174,7 @@ export function RoomDetailScreen() {
   if (!room && !loading) {
     return (
       <View className={`flex-1 items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
-        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>Room not found</Text>
+        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('property.notFound')}</Text>
       </View>
     );
   }
@@ -266,7 +267,7 @@ export function RoomDetailScreen() {
                   {assets.length}
                 </Text>
               </View>
-              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Assets</Text>
+              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('asset.title')}</Text>
             </View>
             <View className={`w-px ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />
             <View className="flex-1 items-center">
@@ -276,7 +277,7 @@ export function RoomDetailScreen() {
                   {formatCurrency(totalAssetValue)}
                 </Text>
               </View>
-              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Value</Text>
+              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.total')}</Text>
             </View>
           </View>
         </View>
@@ -284,7 +285,7 @@ export function RoomDetailScreen() {
         {/* Quick Actions */}
         <View className="mx-4 mt-5">
           <Text className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Quick Actions
+            {t('home.quickActions')}
           </Text>
           <View className="flex-row gap-2.5">
             <PressableCard
@@ -301,7 +302,7 @@ export function RoomDetailScreen() {
               <View className="w-10 h-10 rounded-xl bg-purple-100 items-center justify-center">
                 <Palette size={20} color="#8b5cf6" />
               </View>
-              <Text className="text-xs font-semibold text-purple-700 mt-2">Paint</Text>
+              <Text className="text-xs font-semibold text-purple-700 mt-2">{t('quickActions.paint')}</Text>
             </PressableCard>
 
             <PressableCard
@@ -318,7 +319,7 @@ export function RoomDetailScreen() {
               <View className="w-10 h-10 rounded-xl bg-blue-100 items-center justify-center">
                 <Ruler size={20} color={COLORS.info} />
               </View>
-              <Text className="text-xs font-semibold text-blue-700 mt-2">Measure</Text>
+              <Text className="text-xs font-semibold text-blue-700 mt-2">{t('quickActions.measure')}</Text>
             </PressableCard>
 
             <PressableCard
@@ -335,7 +336,7 @@ export function RoomDetailScreen() {
               <View className="w-10 h-10 rounded-xl bg-green-100 items-center justify-center">
                 <DollarSign size={20} color={COLORS.primary[600]} />
               </View>
-              <Text className="text-xs font-semibold text-green-700 mt-2">Expense</Text>
+              <Text className="text-xs font-semibold text-green-700 mt-2">{t('quickActions.expense')}</Text>
             </PressableCard>
 
             <PressableCard
@@ -352,7 +353,7 @@ export function RoomDetailScreen() {
               <View className="w-10 h-10 rounded-xl bg-pink-100 items-center justify-center">
                 <Package size={20} color="#ec4899" />
               </View>
-              <Text className="text-xs font-semibold text-pink-700 mt-2">Asset</Text>
+              <Text className="text-xs font-semibold text-pink-700 mt-2">{t('quickActions.assets')}</Text>
             </PressableCard>
           </View>
         </View>
@@ -361,7 +362,7 @@ export function RoomDetailScreen() {
         <View className="mx-4 mt-6">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Assets ({assets.length})
+              {t('asset.title')} ({assets.length})
             </Text>
             <TouchableOpacity
               onPress={() =>
@@ -374,7 +375,7 @@ export function RoomDetailScreen() {
               activeOpacity={0.7}
             >
               <Plus size={16} color={COLORS.primary[600]} />
-              <Text className="text-sm font-semibold text-primary-600 ml-1">Add</Text>
+              <Text className="text-sm font-semibold text-primary-600 ml-1">{t('common.add')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -383,12 +384,12 @@ export function RoomDetailScreen() {
               <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-pink-900/40' : 'bg-pink-50'}`}>
                 <Package size={28} color="#ec4899" />
               </View>
-              <Text className={`text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>No assets yet</Text>
+              <Text className={`text-base font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{t('room.noAssets')}</Text>
               <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Add appliances, furniture, and other items in this room
+                {t('room.noAssetsDescription')}
               </Text>
               <Button
-                title="Add First Asset"
+                title={t('room.addFirstAsset')}
                 variant="primary"
                 size="sm"
                 onPress={() =>
@@ -479,7 +480,7 @@ export function RoomDetailScreen() {
           <View className="mx-4 mt-6 flex-row items-center justify-center">
             <Calendar size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
             <Text className={`text-xs ml-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Added {format(parseISO(room.createdAt), 'MMMM d, yyyy')}
+              {t('property.added')} {format(parseISO(room.createdAt), 'MMMM d, yyyy')}
             </Text>
           </View>
         )}

@@ -33,7 +33,7 @@ import { Button, Input, IconButton } from '../../components/ui';
 import { COLORS, EXPENSE_TYPES, BILL_CATEGORIES } from '../../constants/theme';
 import { getCurrencySymbol } from '../../utils/currency';
 import { formatDateObjectWithDay } from '../../utils/date';
-import { useToast } from '../../contexts';
+import { useToast, useTranslation } from '../../contexts';
 import { getImageQuality } from '../../utils/image';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,12 +46,12 @@ type ExpenseTypeOption = {
   Icon: typeof Wrench;
 };
 
-const expenseTypes: ExpenseTypeOption[] = [
-  { value: 'repair', label: 'Repair', color: EXPENSE_TYPES.repair.color, Icon: Wrench },
-  { value: 'bill', label: 'Bill', color: EXPENSE_TYPES.bill.color, Icon: Receipt },
-  { value: 'maintenance', label: 'Maintenance', color: EXPENSE_TYPES.maintenance.color, Icon: Settings },
-  { value: 'purchase', label: 'Purchase', color: EXPENSE_TYPES.purchase.color, Icon: ShoppingBag },
-  { value: 'other', label: 'Other', color: EXPENSE_TYPES.other.color, Icon: MoreHorizontal },
+const getExpenseTypes = (t: any): ExpenseTypeOption[] => [
+  { value: 'repair', label: t('expense.types.repair'), color: EXPENSE_TYPES.repair.color, Icon: Wrench },
+  { value: 'bill', label: t('expense.types.bill'), color: EXPENSE_TYPES.bill.color, Icon: Receipt },
+  { value: 'maintenance', label: t('expense.types.maintenance'), color: EXPENSE_TYPES.maintenance.color, Icon: Settings },
+  { value: 'purchase', label: t('expense.types.purchase'), color: EXPENSE_TYPES.purchase.color, Icon: ShoppingBag },
+  { value: 'other', label: t('expense.types.other'), color: EXPENSE_TYPES.other.color, Icon: MoreHorizontal },
 ];
 
 const categoryOptions: Record<ExpenseType, string[]> = {
@@ -67,6 +67,7 @@ export function EditExpenseScreen() {
   const route = useRoute<EditExpenseRouteProp>();
   const insets = useSafeAreaInsets();
   const { expenseId } = route.params;
+  const { t } = useTranslation();
 
   const [type, setType] = useState<ExpenseType>('repair');
   const [category, setCategory] = useState('');
@@ -118,7 +119,7 @@ export function EditExpenseScreen() {
       }
     } catch (error) {
       console.error('Failed to load expense:', error);
-      Alert.alert('Error', 'Failed to load expense');
+      Alert.alert(t('common.error'), t('expense.loadError'));
       navigation.goBack();
     } finally {
       setInitialLoading(false);
@@ -128,7 +129,7 @@ export function EditExpenseScreen() {
   const handlePickReceipt = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionNeeded'), t('common.photoLibraryPermission'));
       return;
     }
 
@@ -146,7 +147,7 @@ export function EditExpenseScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant camera access');
+      Alert.alert(t('common.permissionNeeded'), t('common.cameraPermission'));
       return;
     }
 
@@ -162,12 +163,12 @@ export function EditExpenseScreen() {
 
   const handleSave = async () => {
     if (!amount.trim() || parseFloat(amount) <= 0) {
-      Alert.alert('Required', 'Please enter a valid amount');
+      Alert.alert(t('common.required'), t('common.validAmount'));
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Required', 'Please enter a description');
+      Alert.alert(t('common.required'), t('expense.descriptionRequired'));
       return;
     }
 
@@ -202,7 +203,7 @@ export function EditExpenseScreen() {
       navigation.goBack();
     } catch (error) {
       console.error('Failed to update expense:', error);
-      Alert.alert('Error', 'Failed to update expense. Please try again.');
+      Alert.alert(t('common.error'), t('expense.updateError'));
     } finally {
       setLoading(false);
     }
@@ -242,12 +243,13 @@ export function EditExpenseScreen() {
   if (initialLoading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
-        <Text className="text-slate-500">Loading...</Text>
+        <Text className="text-slate-500">{t('common.loading')}</Text>
       </View>
     );
   }
 
   const currentCategories = categoryOptions[type];
+  const expenseTypes = getExpenseTypes(t);
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -258,9 +260,9 @@ export function EditExpenseScreen() {
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className="text-lg font-bold text-slate-900">Edit Expense</Text>
+        <Text className="text-lg font-bold text-slate-900">{t('expense.edit')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -280,7 +282,7 @@ export function EditExpenseScreen() {
         >
           {/* Amount Section */}
           <View className="bg-primary-50 rounded-2xl p-5 mb-5 items-center">
-            <Text className="text-sm font-medium text-primary-700 mb-2">Amount</Text>
+            <Text className="text-sm font-medium text-primary-700 mb-2">{t('expense.amount')}</Text>
             <View className="flex-row items-center">
               <Text className="text-3xl font-bold text-primary-700">{getCurrencySymbol()}</Text>
               <Input
@@ -296,7 +298,7 @@ export function EditExpenseScreen() {
 
           {/* Expense Type */}
           <View className="mb-5">
-            <Text className="text-sm font-medium text-slate-700 mb-3">Expense Type</Text>
+            <Text className="text-sm font-medium text-slate-700 mb-3">{t('expense.type')}</Text>
             <View className="flex-row gap-2">
               {expenseTypes.map(renderTypeButton)}
             </View>
@@ -304,7 +306,7 @@ export function EditExpenseScreen() {
 
           {/* Category */}
           <View className="mb-5">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Category</Text>
+            <Text className="text-sm font-medium text-slate-700 mb-2">{t('expense.category')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -335,8 +337,8 @@ export function EditExpenseScreen() {
 
           {/* Description */}
           <Input
-            label="Description"
-            placeholder="What was this expense for?"
+            label={t('expense.description')}
+            placeholder={t('expense.descriptionPlaceholder')}
             value={description}
             onChangeText={setDescription}
             containerClassName="mb-4"
@@ -345,7 +347,7 @@ export function EditExpenseScreen() {
 
           {/* Date */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Date</Text>
+            <Text className="text-sm font-medium text-slate-700 mb-2">{t('expense.date')}</Text>
             <TouchableOpacity
               onPress={() => {
                 setTempDate(date);
@@ -364,7 +366,7 @@ export function EditExpenseScreen() {
           {/* Room Selection */}
           {rooms.length > 0 && (
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-2">Room</Text>
+              <Text className="text-sm font-medium text-slate-700 mb-2">{t('common.room')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -382,7 +384,7 @@ export function EditExpenseScreen() {
                       !selectedRoomId ? 'text-primary-700' : 'text-slate-700'
                     }`}
                   >
-                    No Room
+                    {t('common.noRoom')}
                   </Text>
                 </TouchableOpacity>
                 {rooms.map((room) => (
@@ -415,7 +417,7 @@ export function EditExpenseScreen() {
               <View className="flex-row items-center mb-2">
                 <Users size={16} color={COLORS.slate[500]} />
                 <Text className="text-sm font-medium text-slate-700 ml-1.5">
-                  Worker
+                  {t('common.worker')}
                 </Text>
               </View>
               <ScrollView
@@ -435,7 +437,7 @@ export function EditExpenseScreen() {
                       !selectedWorkerId ? 'text-primary-700' : 'text-slate-700'
                     }`}
                   >
-                    No Worker
+                    {t('common.noWorker')}
                   </Text>
                 </TouchableOpacity>
                 {workers.map((worker) => (
@@ -464,7 +466,7 @@ export function EditExpenseScreen() {
 
           {/* Receipt */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Receipt</Text>
+            <Text className="text-sm font-medium text-slate-700 mb-2">{t('expense.receipt')}</Text>
             <View className="flex-row items-center">
               <TouchableOpacity
                 onPress={handlePickReceipt}
@@ -480,20 +482,20 @@ export function EditExpenseScreen() {
                 ) : (
                   <View className="items-center">
                     <Receipt size={24} color={COLORS.slate[400]} />
-                    <Text className="text-xs text-slate-500 mt-1">Add</Text>
+                    <Text className="text-xs text-slate-500 mt-1">{t('common.add')}</Text>
                   </View>
                 )}
               </TouchableOpacity>
 
               <View className="ml-3 gap-2">
                 <Button
-                  title={receiptUri ? "Change" : "Choose"}
+                  title={receiptUri ? t('common.change') : t('common.choose')}
                   variant="outline"
                   size="sm"
                   onPress={handlePickReceipt}
                 />
                 <Button
-                  title="Camera"
+                  title={t('common.camera')}
                   variant="outline"
                   size="sm"
                   icon={<Camera size={14} color={COLORS.slate[700]} />}
@@ -511,16 +513,16 @@ export function EditExpenseScreen() {
           <View className="bg-white rounded-t-3xl">
             <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text className="text-base text-slate-600">Cancel</Text>
+                <Text className="text-base text-slate-600">{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text className="text-base font-semibold text-slate-900">Select Date</Text>
+              <Text className="text-base font-semibold text-slate-900">{t('common.selectDate')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setDate(tempDate);
                   setShowDatePicker(false);
                 }}
               >
-                <Text className="text-base font-semibold text-primary-600">Done</Text>
+                <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -531,6 +533,7 @@ export function EditExpenseScreen() {
                 if (selectedDate) setTempDate(selectedDate);
               }}
               style={{ height: 200 }}
+              textColor="#1e293b"
             />
           </View>
         </View>

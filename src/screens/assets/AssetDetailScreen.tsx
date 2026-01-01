@@ -37,7 +37,7 @@ import { ScreenHeader, Card, PressableCard, Button, IconButton, Badge, SingleIma
 import { COLORS, ASSET_CATEGORIES, EXPENSE_TYPES } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { formatDate, formatRelativeDate } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type AssetDetailRouteProp = RouteProp<RootStackParamList, 'AssetDetail'>;
@@ -47,6 +47,7 @@ export function AssetDetailScreen() {
   const route = useRoute<AssetDetailRouteProp>();
   const { assetId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
@@ -92,12 +93,12 @@ export function AssetDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Asset',
+      t('asset.delete'),
       `Are you sure you want to delete "${asset?.name}"? This action cannot be undone.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -105,7 +106,7 @@ export function AssetDetailScreen() {
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete asset:', error);
-              Alert.alert('Error', 'Failed to delete asset');
+              Alert.alert(t('common.error'), 'Failed to delete asset');
             }
           },
         },
@@ -127,12 +128,12 @@ export function AssetDetailScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <ScreenHeader
-          title="Asset"
+          title={t('asset.title')}
           showBack
           onBack={() => navigation.goBack()}
         />
         <View className="flex-1 items-center justify-center">
-          <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>Loading...</Text>
+          <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('common.loading')}</Text>
         </View>
       </View>
     );
@@ -149,7 +150,7 @@ export function AssetDetailScreen() {
     const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysRemaining < 0) {
-      return { status: 'expired', label: 'Expired', color: COLORS.slate[400], days: Math.abs(daysRemaining) };
+      return { status: 'expired', label: t('common.error'), color: COLORS.slate[400], days: Math.abs(daysRemaining) };
     } else if (daysRemaining <= 30) {
       return { status: 'expiring', label: 'Expiring Soon', color: COLORS.warning, days: daysRemaining };
     } else {
@@ -160,7 +161,7 @@ export function AssetDetailScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Asset Details"
+        title={t('asset.title')}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={
@@ -311,7 +312,7 @@ export function AssetDetailScreen() {
               <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 {formatCurrency(asset.purchasePrice)}
               </Text>
-              <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Purchase Price</Text>
+              <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('asset.purchasePrice')}</Text>
             </Card>
           )}
 
@@ -352,7 +353,7 @@ export function AssetDetailScreen() {
                   <Hash size={18} color={COLORS.slate[500]} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Serial Number</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('asset.serialNumber')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.serialNumber}</Text>
                 </View>
               </View>
@@ -364,7 +365,7 @@ export function AssetDetailScreen() {
                   <Calendar size={18} color={COLORS.slate[500]} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Purchase Date</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('asset.purchaseDate')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatDate(asset.purchaseDate)}
                   </Text>
@@ -378,7 +379,7 @@ export function AssetDetailScreen() {
                   <ShieldCheck size={18} color={COLORS.slate[500]} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Warranty Expires</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('asset.warrantyEndDate')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatDate(asset.warrantyEndDate)}
                   </Text>
@@ -405,7 +406,7 @@ export function AssetDetailScreen() {
 
             {!asset.serialNumber && !asset.purchaseDate && !asset.warrantyEndDate && !asset.manualUri && (
               <View className="px-4 py-4">
-                <Text className={`text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No additional details</Text>
+                <Text className={`text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.noData')}</Text>
               </View>
             )}
           </Card>
@@ -415,7 +416,7 @@ export function AssetDetailScreen() {
         {asset.notes && (
           <View className="px-5 mt-5">
             <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Notes
+              {t('maintenance.notes')}
             </Text>
             <Card variant="default" padding="md" className={isDark ? 'bg-slate-800' : ''}>
               <Text className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{asset.notes}</Text>

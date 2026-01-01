@@ -34,7 +34,7 @@ import { assetRepository, roomRepository } from '../../services/database';
 import { ScreenHeader, Input, Button, Badge } from '../../components/ui';
 import { COLORS, ASSET_CATEGORIES, SHADOWS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 import { format } from 'date-fns';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,23 +46,24 @@ type AssetCategoryOption = {
   color: string;
 };
 
-const assetCategories: AssetCategoryOption[] = [
-  { value: 'appliance', label: 'Appliance', color: ASSET_CATEGORIES.appliance.color },
-  { value: 'hvac', label: 'HVAC', color: ASSET_CATEGORIES.hvac.color },
-  { value: 'plumbing', label: 'Plumbing', color: ASSET_CATEGORIES.plumbing.color },
-  { value: 'electrical', label: 'Electrical', color: ASSET_CATEGORIES.electrical.color },
-  { value: 'furniture', label: 'Furniture', color: ASSET_CATEGORIES.furniture.color },
-  { value: 'electronics', label: 'Electronics', color: ASSET_CATEGORIES.electronics.color },
-  { value: 'outdoor', label: 'Outdoor', color: ASSET_CATEGORIES.outdoor.color },
-  { value: 'structural', label: 'Structural', color: ASSET_CATEGORIES.structural.color },
-  { value: 'other', label: 'Other', color: ASSET_CATEGORIES.other.color },
-];
-
 export function PropertyAssetsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PropertyAssetsRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
+  const assetCategories: AssetCategoryOption[] = [
+    { value: 'appliance', label: t('asset.categories.appliance'), color: ASSET_CATEGORIES.appliance.color },
+    { value: 'hvac', label: t('asset.categories.hvac'), color: ASSET_CATEGORIES.hvac.color },
+    { value: 'plumbing', label: t('asset.categories.plumbing'), color: ASSET_CATEGORIES.plumbing.color },
+    { value: 'electrical', label: t('asset.categories.electrical'), color: ASSET_CATEGORIES.electrical.color },
+    { value: 'furniture', label: t('asset.categories.furniture'), color: ASSET_CATEGORIES.furniture.color },
+    { value: 'electronics', label: t('asset.categories.electronics'), color: ASSET_CATEGORIES.electronics.color },
+    { value: 'outdoor', label: t('asset.categories.outdoor'), color: ASSET_CATEGORIES.outdoor.color },
+    { value: 'structural', label: t('asset.categories.structural'), color: ASSET_CATEGORIES.structural.color },
+    { value: 'other', label: t('asset.categories.other'), color: ASSET_CATEGORIES.other.color },
+  ];
 
   // Assets list state
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -145,7 +146,7 @@ export function PropertyAssetsScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('permissions.photosDescription'));
       return;
     }
 
@@ -164,7 +165,7 @@ export function PropertyAssetsScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant camera access');
+      Alert.alert(t('common.permissionRequired'), t('permissions.cameraDescription'));
       return;
     }
 
@@ -181,7 +182,7 @@ export function PropertyAssetsScreen() {
 
   const handleSaveAsset = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter an asset name');
+      Alert.alert(t('common.required'), t('common.required'));
       return;
     }
 
@@ -207,7 +208,7 @@ export function PropertyAssetsScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to create asset:', error);
-      Alert.alert('Error', 'Failed to create asset. Please try again.');
+      Alert.alert(t('common.error'), t('common.tryAgain'));
     } finally {
       setSaving(false);
     }
@@ -237,7 +238,7 @@ export function PropertyAssetsScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Assets"
+        title={t('asset.title')}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={
@@ -261,7 +262,7 @@ export function PropertyAssetsScreen() {
         >
           <Search size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
           <TextInput
-            placeholder="Search assets..."
+            placeholder={t('search.placeholder')}
             placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -301,7 +302,7 @@ export function PropertyAssetsScreen() {
                     : 'text-slate-600'
                 }`}
               >
-                All ({assets.length})
+                {t('common.all')} ({assets.length})
               </Text>
             </TouchableOpacity>
             {assetCategories.map((cat) => {
@@ -361,12 +362,12 @@ export function PropertyAssetsScreen() {
               <Package size={36} color={isDark ? COLORS.slate[600] : COLORS.slate[400]} />
             </View>
             <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-              {searchQuery || selectedCategory ? 'No matching assets' : 'No assets yet'}
+              {searchQuery || selectedCategory ? t('search.noResults') : t('asset.noAssets')}
             </Text>
             <Text className={`text-sm text-center mt-2 px-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {searchQuery || selectedCategory
-                ? 'Try adjusting your search or filter'
-                : 'Tap the + button to add your first asset'}
+                ? t('common.tryDifferentSearch')
+                : t('asset.noAssetsDescription')}
             </Text>
             {!searchQuery && !selectedCategory && (
               <TouchableOpacity
@@ -375,7 +376,7 @@ export function PropertyAssetsScreen() {
                 activeOpacity={0.7}
               >
                 <Plus size={18} color="#fff" />
-                <Text className="text-white font-semibold ml-1.5">Add Asset</Text>
+                <Text className="text-white font-semibold ml-1.5">{t('asset.add')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -384,11 +385,11 @@ export function PropertyAssetsScreen() {
             {/* Summary */}
             <View className="flex-row items-center justify-between mb-2">
               <Text className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {filteredAssets.length} asset{filteredAssets.length !== 1 ? 's' : ''}
+                {filteredAssets.length} {t('asset.title').toLowerCase()}
               </Text>
               {filteredAssets.some((a) => a.purchasePrice) && (
                 <Text className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  Total: {formatCurrency(
+                  {t('worker.total')}: {formatCurrency(
                     filteredAssets.reduce((sum, a) => sum + (a.purchasePrice || 0), 0)
                   )}
                 </Text>
@@ -488,7 +489,7 @@ export function PropertyAssetsScreen() {
               <X size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
             </TouchableOpacity>
             <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Add Asset
+              {t('asset.add')}
             </Text>
             <TouchableOpacity
               onPress={handleSaveAsset}
@@ -528,7 +529,7 @@ export function PropertyAssetsScreen() {
                     <View className="items-center">
                       <Camera size={28} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                       <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Add Photo
+                        {t('worker.addPhoto')}
                       </Text>
                     </View>
                   )}
@@ -539,14 +540,14 @@ export function PropertyAssetsScreen() {
                       onPress={handlePickImage}
                       className="px-3 py-2 bg-slate-200 rounded-lg"
                     >
-                      <Text className="text-sm text-slate-700">Change</Text>
+                      <Text className="text-sm text-slate-700">{t('common.change')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={handleTakePhoto}
                       className="px-3 py-2 bg-slate-200 rounded-lg flex-row items-center"
                     >
                       <Camera size={14} color={COLORS.slate[700]} />
-                      <Text className="text-sm text-slate-700 ml-1">Camera</Text>
+                      <Text className="text-sm text-slate-700 ml-1">{t('property.takePhoto')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -554,8 +555,8 @@ export function PropertyAssetsScreen() {
 
               {/* Name */}
               <Input
-                label="Asset Name *"
-                placeholder="e.g., Samsung Refrigerator"
+                label={t('asset.name') + ' *'}
+                placeholder={t('asset.namePlaceholder')}
                 value={name}
                 onChangeText={setName}
                 containerClassName="mb-4"
@@ -564,7 +565,7 @@ export function PropertyAssetsScreen() {
               {/* Category */}
               <View className="mb-4">
                 <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  Category
+                  {t('asset.category')}
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {assetCategories.map((cat) => (
@@ -606,7 +607,7 @@ export function PropertyAssetsScreen() {
               {rooms.length > 0 && (
                 <View className="mb-4">
                   <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    Room (Optional)
+                    {t('room.title')} ({t('common.optional')})
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View className="flex-row gap-2">
@@ -630,7 +631,7 @@ export function PropertyAssetsScreen() {
                               : 'text-slate-700'
                           }`}
                         >
-                          No Room
+                          {t('common.none')}
                         </Text>
                       </TouchableOpacity>
                       {rooms.map((room) => (
@@ -667,15 +668,15 @@ export function PropertyAssetsScreen() {
               {/* Brand & Model */}
               <View className="flex-row gap-3 mb-4">
                 <Input
-                  label="Brand"
-                  placeholder="e.g., Samsung"
+                  label={t('asset.brand')}
+                  placeholder={t('asset.brandPlaceholder')}
                   value={brand}
                   onChangeText={setBrand}
                   containerClassName="flex-1"
                 />
                 <Input
-                  label="Model"
-                  placeholder="Model number"
+                  label={t('asset.model')}
+                  placeholder={t('asset.modelPlaceholder')}
                   value={model}
                   onChangeText={setModel}
                   containerClassName="flex-1"
@@ -684,8 +685,8 @@ export function PropertyAssetsScreen() {
 
               {/* Serial Number */}
               <Input
-                label="Serial Number"
-                placeholder="Enter serial number"
+                label={t('asset.serialNumber')}
+                placeholder={t('asset.serialNumberPlaceholder')}
                 value={serialNumber}
                 onChangeText={setSerialNumber}
                 containerClassName="mb-4"
@@ -704,18 +705,18 @@ export function PropertyAssetsScreen() {
                   }`}
                 >
                   <Text className={`text-xs mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Purchase Date
+                    {t('asset.purchaseDate')}
                   </Text>
                   <View className="flex-row items-center">
                     <Calendar size={14} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
                     <Text className={`text-sm ml-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                      {purchaseDate ? format(purchaseDate, 'MMM d, yyyy') : 'Select'}
+                      {purchaseDate ? format(purchaseDate, 'MMM d, yyyy') : t('common.select')}
                     </Text>
                   </View>
                 </TouchableOpacity>
 
                 <Input
-                  label="Purchase Price"
+                  label={t('asset.purchasePrice')}
                   placeholder="0.00"
                   value={purchasePrice}
                   onChangeText={setPurchasePrice}
@@ -737,19 +738,19 @@ export function PropertyAssetsScreen() {
                 }`}
               >
                 <Text className={`text-xs mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Warranty End Date
+                  {t('asset.warrantyEndDate')}
                 </Text>
                 <View className="flex-row items-center">
                   <Shield size={14} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
                   <Text className={`text-sm ml-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                    {warrantyEndDate ? format(warrantyEndDate, 'MMM d, yyyy') : 'Select (Optional)'}
+                    {warrantyEndDate ? format(warrantyEndDate, 'MMM d, yyyy') : t('common.select') + ' (' + t('common.optional') + ')'}
                   </Text>
                 </View>
               </TouchableOpacity>
 
               {/* Save Button */}
               <Button
-                title={saving ? 'Saving...' : 'Save Asset'}
+                title={saving ? t('common.loading') : t('common.save') + ' ' + t('asset.title')}
                 variant="primary"
                 onPress={handleSaveAsset}
                 loading={saving}
@@ -772,10 +773,10 @@ export function PropertyAssetsScreen() {
                   onPress={() => setShowPurchaseDatePicker(false)}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base text-slate-500">Cancel</Text>
+                  <Text className="text-base text-slate-500">{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Purchase Date
+                  {t('asset.purchaseDate')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -784,7 +785,7 @@ export function PropertyAssetsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base font-semibold text-primary-600">Done</Text>
+                  <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -813,10 +814,10 @@ export function PropertyAssetsScreen() {
                   onPress={() => setShowWarrantyDatePicker(false)}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base text-slate-500">Cancel</Text>
+                  <Text className="text-base text-slate-500">{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Warranty End Date
+                  {t('asset.warrantyEndDate')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -825,7 +826,7 @@ export function PropertyAssetsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base font-semibold text-primary-600">Done</Text>
+                  <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker

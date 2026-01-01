@@ -53,27 +53,28 @@ import { IconButton, PressableCard, Button } from '../../components/ui';
 import { COLORS, ROOM_TYPES, PROPERTY_TYPES, SHADOWS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { useTheme } from '../../contexts';
+import { tr } from 'date-fns/locale';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PropertyDetailRouteProp = RouteProp<RootStackParamList, 'PropertyDetail'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Quick action data
+// Quick action data - labels will be translated in component
 const quickActions = [
-  { key: 'emergency', label: 'Emergency', icon: AlertTriangle, colors: ['#ef4444', '#dc2626'], screen: 'Emergency' },
-  { key: 'paint', label: 'Paint', icon: Palette, colors: ['#a855f7', '#9333ea'], screen: 'PaintCodes' },
-  { key: 'measure', label: 'Measure', icon: Ruler, colors: ['#3b82f6', '#2563eb'], screen: 'Measurements' },
-  { key: 'storage', label: 'Storage', icon: Box, colors: ['#f59e0b', '#d97706'], screen: 'StorageBoxes' },
-  { key: 'wifi', label: 'WiFi', icon: Wifi, colors: ['#06b6d4', '#0891b2'], screen: 'WiFiInfo' },
-  { key: 'tasks', label: 'Tasks', icon: Wrench, colors: ['#14b8a6', '#0d9488'], screen: 'Maintenance' },
-  { key: 'expense', label: 'Expense', icon: DollarSign, colors: ['#22c55e', '#16a34a'], screen: 'AddExpense' },
-  { key: 'asset', label: 'Assets', icon: Package, colors: ['#ec4899', '#db2777'], screen: 'PropertyAssets' },
-  { key: 'docs', label: 'Docs', icon: FileText, colors: ['#6366f1', '#4f46e5'], screen: 'Documents' },
-  { key: 'renovate', label: 'Renovate', icon: Images, colors: ['#c026d3', '#a21caf'], screen: 'Renovations' },
-  { key: 'bills', label: 'Bills', icon: RefreshCcw, colors: ['#ea580c', '#c2410c'], screen: 'BillTemplates' },
-  { key: 'notes', label: 'Notes', icon: StickyNote, colors: ['#ca8a04', '#a16207'], screen: 'Notes' },
+  { key: 'emergency', translationKey: 'quickActions.emergency', icon: AlertTriangle, colors: ['#ef4444', '#dc2626'], screen: 'Emergency' },
+  { key: 'paint', translationKey: 'quickActions.paint', icon: Palette, colors: ['#a855f7', '#9333ea'], screen: 'PaintCodes' },
+  { key: 'measure', translationKey: 'quickActions.measure', icon: Ruler, colors: ['#3b82f6', '#2563eb'], screen: 'Measurements' },
+  { key: 'storage', translationKey: 'quickActions.storage', icon: Box, colors: ['#f59e0b', '#d97706'], screen: 'StorageBoxes' },
+  { key: 'wifi', translationKey: 'quickActions.wifi', icon: Wifi, colors: ['#06b6d4', '#0891b2'], screen: 'WiFiInfo' },
+  { key: 'tasks', translationKey: 'quickActions.tasks', icon: Wrench, colors: ['#14b8a6', '#0d9488'], screen: 'Maintenance' },
+  { key: 'expense', translationKey: 'quickActions.expense', icon: DollarSign, colors: ['#22c55e', '#16a34a'], screen: 'AddExpense' },
+  { key: 'asset', translationKey: 'quickActions.asset', icon: Package, colors: ['#ec4899', '#db2777'], screen: 'PropertyAssets' },
+  { key: 'docs', translationKey: 'quickActions.docs', icon: FileText, colors: ['#6366f1', '#4f46e5'], screen: 'Documents' },
+  { key: 'renovate', translationKey: 'quickActions.renovate', icon: Images, colors: ['#c026d3', '#a21caf'], screen: 'Renovations' },
+  { key: 'bills', translationKey: 'quickActions.bills', icon: RefreshCcw, colors: ['#ea580c', '#c2410c'], screen: 'BillTemplates' },
+  { key: 'notes', translationKey: 'quickActions.notes', icon: StickyNote, colors: ['#ca8a04', '#a16207'], screen: 'Notes' },
 ];
 
 // Animated Quick Action Button
@@ -81,10 +82,12 @@ const QuickActionItem = ({
   action,
   onPress,
   index,
+  label,
 }: {
   action: typeof quickActions[0];
   onPress: () => void;
   index: number;
+  label: string;
 }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
@@ -143,7 +146,7 @@ const QuickActionItem = ({
           <IconComponent size={22} color="#fff" />
         </LinearGradient>
         <Text className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-          {action.label}
+          {label}
         </Text>
       </TouchableOpacity>
     </Animated.View>
@@ -167,6 +170,7 @@ export function PropertyDetailScreen() {
   const route = useRoute<PropertyDetailRouteProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -228,7 +232,7 @@ export function PropertyDetailScreen() {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Edit Property', 'Delete Property'],
+          options: [t('common.cancel'), t('property.edit'), t('property.delete')],
           destructiveButtonIndex: 2,
           cancelButtonIndex: 0,
         },
@@ -241,25 +245,25 @@ export function PropertyDetailScreen() {
         }
       );
     } else {
-      Alert.alert('Property Options', 'Choose an action', [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('property.options'), t('property.chooseAction'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Edit Property',
+          text: t('property.edit'),
           onPress: () => navigation.navigate('EditProperty', { propertyId: property!.id }),
         },
-        { text: 'Delete Property', style: 'destructive', onPress: handleDelete },
+        { text: t('property.delete'), style: 'destructive', onPress: handleDelete },
       ]);
     }
   };
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Property',
-      'Are you sure you want to delete this property? This will also delete all rooms, assets, and expenses associated with it. This action cannot be undone.',
+      t('property.delete'),
+      t('property.deleteConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('property.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -267,7 +271,7 @@ export function PropertyDetailScreen() {
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete property:', error);
-              Alert.alert('Error', 'Failed to delete property. Please try again.');
+              Alert.alert(t('common.error'), t('property.failedToDelete'));
             }
           },
         },
@@ -277,9 +281,9 @@ export function PropertyDetailScreen() {
 
   const formatExpenseDate = (dateString: string) => {
     const date = parseISO(dateString);
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
-    return format(date, 'MMM d');
+    if (isToday(date)) return t('common.today');
+    if (isYesterday(date)) return t('common.yesterday');
+    return format(date, 'd MMM', { locale: tr });
   };
 
   const getExpenseIcon = (type: Expense['type']) => {
@@ -300,7 +304,7 @@ export function PropertyDetailScreen() {
   if (!property && !loading) {
     return (
       <View className={`flex-1 items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
-        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>Property not found</Text>
+        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('property.notFound')}</Text>
       </View>
     );
   }
@@ -441,7 +445,7 @@ export function PropertyDetailScreen() {
                   {rooms.length}
                 </Text>
               </View>
-              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Rooms</Text>
+              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('room.title')}</Text>
             </View>
             <View className={`w-px ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />
             <View className="flex-1 items-center">
@@ -451,7 +455,7 @@ export function PropertyDetailScreen() {
                   {formatCurrency(monthlyTotal)}
                 </Text>
               </View>
-              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>This Month</Text>
+              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('home.thisMonth')}</Text>
             </View>
             <View className={`w-px ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />
             <View className="flex-1 items-center">
@@ -461,7 +465,7 @@ export function PropertyDetailScreen() {
                   {formatCurrency(totalSpent)}
                 </Text>
               </View>
-              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>All Time</Text>
+              <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('home.allTime')}</Text>
             </View>
           </View>
         </View>
@@ -471,7 +475,7 @@ export function PropertyDetailScreen() {
           <View className="flex-row items-center mb-4">
             <Sparkles size={16} color={COLORS.secondary[500]} />
             <Text className={`text-sm font-bold uppercase tracking-wide ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Quick Actions
+              {t('home.quickActions')}
             </Text>
           </View>
           <View
@@ -485,6 +489,7 @@ export function PropertyDetailScreen() {
                   action={action}
                   onPress={() => handleQuickAction(action)}
                   index={index}
+                  label={t(action.translationKey as any)}
                 />
               ))}
             </View>
@@ -495,7 +500,7 @@ export function PropertyDetailScreen() {
         <View className="mx-4 mt-6">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-sm font-bold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Rooms ({rooms.length})
+              {t('room.title')} ({rooms.length})
             </Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('AddRoom', { propertyId: property!.id })}
@@ -503,7 +508,7 @@ export function PropertyDetailScreen() {
               activeOpacity={0.7}
             >
               <Plus size={16} color={COLORS.primary[600]} />
-              <Text className="text-sm font-semibold text-primary-600 ml-1">Add</Text>
+              <Text className="text-sm font-semibold text-primary-600 ml-1">{t('common.add')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -519,10 +524,10 @@ export function PropertyDetailScreen() {
                 <DoorOpen size={28} color={COLORS.slate[400]} />
               </LinearGradient>
               <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                No rooms yet
+                {t('room.noRooms')}
               </Text>
               <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Add rooms to organize your assets and track expenses by area
+                {t('room.noRoomsDescription')}
               </Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('AddRoom', { propertyId: property!.id })}
@@ -534,7 +539,7 @@ export function PropertyDetailScreen() {
                   style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
                 >
                   <Plus size={16} color="#fff" />
-                  <Text className="text-white font-semibold ml-1.5">Add First Room</Text>
+                  <Text className="text-white font-semibold ml-1.5">{t('room.addFirst')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -566,7 +571,7 @@ export function PropertyDetailScreen() {
         <View className="mx-4 mt-6">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-sm font-bold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Recent Expenses
+              {t('expense.recentExpenses')}
             </Text>
             {recentExpenses.length > 0 && (
               <TouchableOpacity
@@ -574,7 +579,7 @@ export function PropertyDetailScreen() {
                 className="flex-row items-center"
                 activeOpacity={0.7}
               >
-                <Text className="text-sm font-semibold text-primary-600">See All</Text>
+                <Text className="text-sm font-semibold text-primary-600">{t('common.seeAll')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -591,10 +596,10 @@ export function PropertyDetailScreen() {
                 <DollarSign size={28} color={COLORS.primary[500]} />
               </LinearGradient>
               <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                No expenses yet
+                {t('expense.noExpenses')}
               </Text>
               <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Track repairs, bills, and purchases for this property
+                {t('expense.noExpensesDescription')}
               </Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('AddExpense', { propertyId: property!.id })}
@@ -606,7 +611,7 @@ export function PropertyDetailScreen() {
                   style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}
                 >
                   <Plus size={16} color="#fff" />
-                  <Text className="text-white font-semibold ml-1.5">Add First Expense</Text>
+                  <Text className="text-white font-semibold ml-1.5">{t('expense.addFirst')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -657,7 +662,7 @@ export function PropertyDetailScreen() {
           <View className="mx-4 mt-8 flex-row items-center justify-center">
             <Calendar size={14} color={isDark ? COLORS.slate[600] : COLORS.slate[400]} />
             <Text className={`text-xs ml-1.5 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-              Added {format(parseISO(property.createdAt), 'MMMM d, yyyy')}
+              {t('property.added')} {format(parseISO(property.createdAt), 'd MMMM yyyy', { locale: tr })}
             </Text>
           </View>
         )}
@@ -680,6 +685,7 @@ const RoomCard = ({
   index: number;
   onPress: () => void;
 }) => {
+  const { t } = useTranslation();
   const translateX = useRef(new Animated.Value(30)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
@@ -762,7 +768,7 @@ const RoomCard = ({
                 style={{ backgroundColor: `${roomConfig.color}15` }}
               >
                 <Text className="text-xs font-medium" style={{ color: roomConfig.color }}>
-                  {roomConfig.label}
+                  {t(`room.types.${room.type}`)}
                 </Text>
               </View>
             </View>

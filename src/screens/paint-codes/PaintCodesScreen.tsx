@@ -29,18 +29,21 @@ import { PaintCode, Property, Room } from '../../types';
 import { paintCodeRepository, propertyRepository, roomRepository } from '../../services/database';
 import { ScreenHeader, Card, Button, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PaintCodesRouteProp = RouteProp<RootStackParamList, 'PaintCodes'>;
 
-const FINISH_OPTIONS = ['Flat', 'Eggshell', 'Satin', 'Semi-Gloss', 'Gloss'];
+const FINISH_KEYS = ['flat', 'eggshell', 'satin', 'semiGloss', 'gloss'] as const;
 
 export function PaintCodesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PaintCodesRouteProp>();
   const { propertyId, roomId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
+  const getFinishLabel = (key: string) => t(`paintCodes.finishes.${key}`);
 
   const [property, setProperty] = useState<Property | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
@@ -104,7 +107,7 @@ export function PaintCodesScreen() {
 
   const handleSave = async () => {
     if (!formLocation.trim() || !formBrand.trim() || !formColorName.trim() || !formColorCode.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('common.error'), t('paintCodes.alerts.fillRequired'));
       return;
     }
 
@@ -136,7 +139,7 @@ export function PaintCodesScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to save paint code:', error);
-      Alert.alert('Error', 'Failed to save paint code');
+      Alert.alert(t('common.error'), t('paintCodes.alerts.saveFailed'));
     }
   };
 
@@ -153,12 +156,12 @@ export function PaintCodesScreen() {
 
   const handleDelete = (code: PaintCode) => {
     Alert.alert(
-      'Delete Paint Code',
-      `Are you sure you want to delete "${code.colorName}" for ${code.location}?`,
+      t('paintCodes.deleteTitle'),
+      t('paintCodes.deleteMessage', { colorName: code.colorName, location: code.location }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -166,7 +169,7 @@ export function PaintCodesScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete paint code:', error);
-              Alert.alert('Error', 'Failed to delete paint code');
+              Alert.alert(t('common.error'), t('paintCodes.alerts.deleteFailed'));
             }
           },
         },
@@ -189,7 +192,7 @@ export function PaintCodesScreen() {
         loadData();
       } catch (error) {
         console.error('Failed to add photo:', error);
-        Alert.alert('Error', 'Failed to add photo');
+        Alert.alert(t('common.error'), t('paintCodes.alerts.photoFailed'));
       }
     }
   };
@@ -204,7 +207,7 @@ export function PaintCodesScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Paint & Colors"
+        title={t('paintCodes.title')}
         subtitle={room?.name || property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -238,7 +241,7 @@ export function PaintCodesScreen() {
             <Card variant="default" padding="md">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {editingId ? 'Edit Paint Code' : 'Add Paint Code'}
+                  {editingId ? t('paintCodes.editPaintCode') : t('paintCodes.addPaintCode')}
                 </Text>
                 <TouchableOpacity onPress={resetForm} activeOpacity={0.7}>
                   <X size={22} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
@@ -247,22 +250,22 @@ export function PaintCodesScreen() {
 
               <View className="gap-3">
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Location *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('paintCodes.location')} *</Text>
                   <TextInput
                     value={formLocation}
                     onChangeText={setFormLocation}
-                    placeholder="e.g., Living Room Walls"
+                    placeholder={t('paintCodes.locationPlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                   />
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Brand *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('paintCodes.brand')} *</Text>
                   <TextInput
                     value={formBrand}
                     onChangeText={setFormBrand}
-                    placeholder="e.g., Benjamin Moore"
+                    placeholder={t('paintCodes.brandPlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                   />
@@ -270,21 +273,21 @@ export function PaintCodesScreen() {
 
                 <View className="flex-row gap-3">
                   <View className="flex-1">
-                    <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Color Name *</Text>
+                    <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('paintCodes.colorName')} *</Text>
                     <TextInput
                       value={formColorName}
                       onChangeText={setFormColorName}
-                      placeholder="e.g., Simply White"
+                      placeholder={t('paintCodes.colorNamePlaceholder')}
                       className={`rounded-xl px-4 py-3 text-base ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border`}
                       placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                     />
                   </View>
                   <View className="flex-1">
-                    <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Code *</Text>
+                    <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('paintCodes.colorCode')} *</Text>
                     <TextInput
                       value={formColorCode}
                       onChangeText={setFormColorCode}
-                      placeholder="e.g., OC-117"
+                      placeholder={t('paintCodes.colorCodePlaceholder')}
                       className={`rounded-xl px-4 py-3 text-base ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border`}
                       placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                     />
@@ -292,14 +295,14 @@ export function PaintCodesScreen() {
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Finish</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('paintCodes.finish')}</Text>
                   <View className="flex-row flex-wrap gap-2">
-                    {FINISH_OPTIONS.map((finish) => (
+                    {FINISH_KEYS.map((finishKey) => (
                       <TouchableOpacity
-                        key={finish}
-                        onPress={() => setFormFinish(formFinish === finish ? '' : finish)}
+                        key={finishKey}
+                        onPress={() => setFormFinish(formFinish === finishKey ? '' : finishKey)}
                         className={`px-3 py-2 rounded-lg border ${
-                          formFinish === finish
+                          formFinish === finishKey
                             ? 'bg-primary-50 border-primary-500'
                             : isDark ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-200'
                         }`}
@@ -307,10 +310,10 @@ export function PaintCodesScreen() {
                       >
                         <Text
                           className={`text-sm font-medium ${
-                            formFinish === finish ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-600'
+                            formFinish === finishKey ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-600'
                           }`}
                         >
-                          {finish}
+                          {getFinishLabel(finishKey)}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -318,11 +321,11 @@ export function PaintCodesScreen() {
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Notes</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('paintCodes.notes')}</Text>
                   <TextInput
                     value={formNotes}
                     onChangeText={setFormNotes}
-                    placeholder="Any additional notes..."
+                    placeholder={t('paintCodes.notesPlaceholder')}
                     multiline
                     numberOfLines={2}
                     className={`rounded-xl px-4 py-3 text-base ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border`}
@@ -332,7 +335,7 @@ export function PaintCodesScreen() {
                 </View>
 
                 <Button
-                  title={editingId ? 'Update Paint Code' : 'Add Paint Code'}
+                  title={editingId ? t('paintCodes.updatePaintCode') : t('paintCodes.addPaintCode')}
                   onPress={handleSave}
                   variant="primary"
                   icon={<Check size={18} color="#ffffff" />}
@@ -351,13 +354,13 @@ export function PaintCodesScreen() {
                   <Palette size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
                 <Text className={`text-lg font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No paint codes saved
+                  {t('paintCodes.noPaintCodes')}
                 </Text>
                 <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Save your paint colors for easy reference during touch-ups
+                  {t('paintCodes.savePaintCodesDescription')}
                 </Text>
                 <Button
-                  title="Add Paint Code"
+                  title={t('paintCodes.addPaintCode')}
                   onPress={() => setShowAddForm(true)}
                   variant="primary"
                   className="mt-4"
@@ -432,7 +435,7 @@ export function PaintCodesScreen() {
                           >
                             <Camera size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
                             <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                              {code.imageUri ? 'Update' : 'Photo'}
+                              {code.imageUri ? t('paintCodes.update') : t('paintCodes.photo')}
                             </Text>
                           </TouchableOpacity>
                           <TouchableOpacity

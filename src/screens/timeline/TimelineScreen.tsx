@@ -35,7 +35,8 @@ import { Expense, MaintenanceTask, ExpenseType } from '../../types';
 import { RootStackParamList } from '../../navigation/types';
 import { formatCurrency } from '../../utils/currency';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth, isFuture } from 'date-fns';
-import { useTheme } from '../../contexts';
+import { tr } from 'date-fns/locale';
+import { useTheme, useTranslation } from '../../contexts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -60,14 +61,6 @@ interface GroupedItems {
   [key: string]: TimelineItem[];
 }
 
-const filterTabs: { key: FilterType; label: string; icon: React.ReactNode; color: string }[] = [
-  { key: 'all', label: 'All', icon: <ListFilter size={16} />, color: COLORS.slate[600] },
-  { key: 'expense', label: 'Expenses', icon: <DollarSign size={16} />, color: COLORS.primary[600] },
-  { key: 'maintenance', label: 'Tasks', icon: <Settings size={16} />, color: COLORS.info },
-  { key: 'upcoming', label: 'Upcoming', icon: <Calendar size={16} />, color: COLORS.secondary[600] },
-  { key: 'overdue', label: 'Overdue', icon: <AlertCircle size={16} />, color: COLORS.error },
-];
-
 const getExpenseIcon = (type: string) => {
   switch (type) {
     case 'repair': return <Wrench size={18} color={COLORS.categories.repair} />;
@@ -78,13 +71,13 @@ const getExpenseIcon = (type: string) => {
   }
 };
 
-const formatDateHeader = (dateStr: string): string => {
+const formatDateHeader = (dateStr: string, locale: any, t: any): string => {
   const date = new Date(dateStr);
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
-  if (isThisWeek(date)) return format(date, 'EEEE');
-  if (isThisMonth(date)) return format(date, 'MMMM d');
-  return format(date, 'MMMM d, yyyy');
+  if (isToday(date)) return t('dates.today');
+  if (isYesterday(date)) return t('dates.yesterday');
+  if (isThisWeek(date)) return format(date, 'EEEE', { locale });
+  if (isThisMonth(date)) return format(date, 'MMMM d', { locale });
+  return format(date, 'MMMM d, yyyy', { locale });
 };
 
 // Animated filter chip component
@@ -94,7 +87,7 @@ const FilterChip = ({
   onPress,
   isDark,
 }: {
-  tab: typeof filterTabs[0];
+  tab: { key: FilterType; label: string; icon: React.ReactNode; color: string };
   isActive: boolean;
   onPress: () => void;
   isDark: boolean;
@@ -176,11 +169,13 @@ const TimelineItemCard = ({
   onPress,
   isDark,
   index,
+  t,
 }: {
   item: TimelineItem;
   onPress: () => void;
   isDark: boolean;
   index: number;
+  t: any;
 }) => {
   const translateX = useRef(new Animated.Value(30)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -231,10 +226,10 @@ const TimelineItemCard = ({
 
   const getMaintenanceStatusLabel = (status: TimelineItem['maintenanceStatus']) => {
     switch (status) {
-      case 'overdue': return 'Overdue';
-      case 'due_soon': return 'Due Soon';
-      case 'completed': return 'Completed';
-      default: return 'Upcoming';
+      case 'overdue': return t('maintenance.status.overdue');
+      case 'due_soon': return t('maintenance.status.dueSoon');
+      case 'completed': return t('maintenance.status.completed');
+      default: return t('maintenance.status.upcoming');
     }
   };
 
@@ -344,6 +339,7 @@ export function TimelineScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t, language } = useTranslation();
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -351,6 +347,18 @@ export function TimelineScreen() {
 
   // Header animation
   const headerAnim = useRef(new Animated.Value(0)).current;
+
+  // Get date-fns locale
+  const dateLocale = language === 'tr' ? tr : undefined;
+
+  // Dynamic filter tabs with translations
+  const filterTabs: { key: FilterType; label: string; icon: React.ReactNode; color: string }[] = [
+    { key: 'all', label: t('timeline.filters.all'), icon: <ListFilter size={16} />, color: COLORS.slate[600] },
+    { key: 'expense', label: t('timeline.filters.expenses'), icon: <DollarSign size={16} />, color: COLORS.primary[600] },
+    { key: 'maintenance', label: t('timeline.filters.tasks'), icon: <Settings size={16} />, color: COLORS.info },
+    { key: 'upcoming', label: t('timeline.filters.upcoming'), icon: <Calendar size={16} />, color: COLORS.secondary[600] },
+    { key: 'overdue', label: t('timeline.filters.overdue'), icon: <AlertCircle size={16} />, color: COLORS.error },
+  ];
 
   const loadData = useCallback(async () => {
     try {
@@ -501,16 +509,16 @@ export function TimelineScreen() {
           <View className="flex-row items-center justify-between mb-1">
             <View>
               <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Timeline
+                {t('timeline.title')}
               </Text>
               <Text className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                All your activities in one place
+                {t('timeline.subtitle')}
               </Text>
             </View>
             {overdueCount > 0 && (
               <View className="bg-red-500 px-3 py-1.5 rounded-full flex-row items-center">
                 <AlertCircle size={14} color="#fff" />
-                <Text className="text-xs font-bold text-white ml-1">{overdueCount} overdue</Text>
+                <Text className="text-xs font-bold text-white ml-1">{overdueCount} {t('timeline.overdue')}</Text>
               </View>
             )}
           </View>
@@ -558,7 +566,7 @@ export function TimelineScreen() {
               </LinearGradient>
               <View>
                 <Text className={`text-xs uppercase font-semibold tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  This Month
+                  {t('home.thisMonth')}
                 </Text>
                 <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {formatCurrency(thisMonthTotal)}
@@ -567,10 +575,10 @@ export function TimelineScreen() {
             </View>
             <View className="items-end">
               <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                {format(new Date(), 'MMMM yyyy')}
+                {format(new Date(), 'MMMM yyyy', { locale: dateLocale })}
               </Text>
               <Text className={`text-sm font-medium mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {expenseCount} expenses
+                {expenseCount} {t('timeline.expenseCount')}
               </Text>
             </View>
           </View>
@@ -596,10 +604,10 @@ export function TimelineScreen() {
                 ? <CheckCircle2 size={52} color={COLORS.primary[500]} />
                 : <Clock size={52} color={COLORS.slate[400]} />
               }
-              title={activeFilter === 'overdue' ? 'All caught up!' : 'No activities yet'}
+              title={activeFilter === 'overdue' ? t('timeline.allCaughtUp') : t('timeline.noActivities')}
               description={activeFilter === 'overdue'
-                ? "Great work! You have no overdue maintenance tasks."
-                : 'When you add expenses or maintenance tasks, they\'ll appear here in chronological order'
+                ? t('timeline.noOverdueTasks')
+                : t('timeline.noActivitiesDescription')
               }
             />
           </View>
@@ -616,7 +624,7 @@ export function TimelineScreen() {
                     }}
                   />
                   <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {formatDateHeader(dateKey)}
+                    {formatDateHeader(dateKey, dateLocale, t)}
                   </Text>
                   <View className="flex-1 h-px ml-3" style={{
                     backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
@@ -634,6 +642,7 @@ export function TimelineScreen() {
                       onPress={() => handleItemPress(item)}
                       isDark={isDark}
                       index={itemIndex}
+                      t={t}
                     />
                   ))}
                 </View>

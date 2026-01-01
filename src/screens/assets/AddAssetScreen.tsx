@@ -8,29 +8,26 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import {
   X,
   Camera,
-  Package,
   Check,
   Calendar,
   DollarSign,
-  FileText,
   Shield,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../../navigation/types';
-import { Asset, AssetCategory, Room } from '../../types';
+import { AssetCategory, Room } from '../../types';
 import { assetRepository, roomRepository } from '../../services/database';
-import { Button, Input, IconButton, TextArea } from '../../components/ui';
-import { COLORS, ASSET_CATEGORIES, SHADOWS } from '../../constants/theme';
+import { Button, Input, IconButton, TextArea, DatePickerModal } from '../../components/ui';
+import { COLORS, ASSET_CATEGORIES } from '../../constants/theme';
 import { format } from 'date-fns';
+import { useTranslation, useTheme } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type AddAssetRouteProp = RouteProp<RootStackParamList, 'AddAsset'>;
@@ -41,22 +38,24 @@ type AssetCategoryOption = {
   color: string;
 };
 
-const assetCategories: AssetCategoryOption[] = [
-  { value: 'appliance', label: 'Appliance', color: ASSET_CATEGORIES.appliance.color },
-  { value: 'hvac', label: 'HVAC', color: ASSET_CATEGORIES.hvac.color },
-  { value: 'plumbing', label: 'Plumbing', color: ASSET_CATEGORIES.plumbing.color },
-  { value: 'electrical', label: 'Electrical', color: ASSET_CATEGORIES.electrical.color },
-  { value: 'furniture', label: 'Furniture', color: ASSET_CATEGORIES.furniture.color },
-  { value: 'electronics', label: 'Electronics', color: ASSET_CATEGORIES.electronics.color },
-  { value: 'outdoor', label: 'Outdoor', color: ASSET_CATEGORIES.outdoor.color },
-  { value: 'structural', label: 'Structural', color: ASSET_CATEGORIES.structural.color },
-  { value: 'other', label: 'Other', color: ASSET_CATEGORIES.other.color },
-];
-
 export function AddAssetScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<AddAssetRouteProp>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const { isDark } = useTheme();
+
+  const assetCategories: AssetCategoryOption[] = [
+    { value: 'appliance', label: t('asset.categories.appliance'), color: ASSET_CATEGORIES.appliance.color },
+    { value: 'hvac', label: t('asset.categories.hvac'), color: ASSET_CATEGORIES.hvac.color },
+    { value: 'plumbing', label: t('asset.categories.plumbing'), color: ASSET_CATEGORIES.plumbing.color },
+    { value: 'electrical', label: t('asset.categories.electrical'), color: ASSET_CATEGORIES.electrical.color },
+    { value: 'furniture', label: t('asset.categories.furniture'), color: ASSET_CATEGORIES.furniture.color },
+    { value: 'electronics', label: t('asset.categories.electronics'), color: ASSET_CATEGORIES.electronics.color },
+    { value: 'outdoor', label: t('asset.categories.outdoor'), color: ASSET_CATEGORIES.outdoor.color },
+    { value: 'structural', label: t('asset.categories.structural'), color: ASSET_CATEGORIES.structural.color },
+    { value: 'other', label: t('asset.categories.other'), color: ASSET_CATEGORIES.other.color },
+  ];
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<AssetCategory>('appliance');
@@ -94,7 +93,7 @@ export function AddAssetScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('permissions.photosDescription'));
       return;
     }
 
@@ -113,7 +112,7 @@ export function AddAssetScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant camera access');
+      Alert.alert(t('common.permissionRequired'), t('permissions.cameraDescription'));
       return;
     }
 
@@ -130,7 +129,7 @@ export function AddAssetScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter an asset name');
+      Alert.alert(t('common.required'), t('common.required'));
       return;
     }
 
@@ -155,7 +154,7 @@ export function AddAssetScreen() {
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create asset:', error);
-      Alert.alert('Error', 'Failed to create asset. Please try again.');
+      Alert.alert(t('common.error'), t('common.tryAgain'));
     } finally {
       setLoading(false);
     }
@@ -195,17 +194,17 @@ export function AddAssetScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`} style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
         <IconButton
-          icon={<X size={22} color={COLORS.slate[600]} />}
+          icon={<X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />}
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className="text-lg font-bold text-slate-900">Add Asset</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('asset.add')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -225,7 +224,7 @@ export function AddAssetScreen() {
         >
           {/* Photo Section */}
           <View className="mb-6">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Photo</Text>
+            <Text className="text-sm font-medium text-slate-700 mb-2">{t('property.photo')}</Text>
             <View className="flex-row items-center">
               <TouchableOpacity
                 onPress={handlePickImage}
@@ -241,7 +240,7 @@ export function AddAssetScreen() {
                 ) : (
                   <View className="items-center">
                     <Camera size={28} color={COLORS.slate[400]} />
-                    <Text className="text-xs text-slate-500 mt-1">Add Photo</Text>
+                    <Text className="text-xs text-slate-500 mt-1">{t('worker.addPhoto')}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -249,13 +248,13 @@ export function AddAssetScreen() {
               {imageUri && (
                 <View className="ml-3 gap-2">
                   <Button
-                    title="Change"
+                    title={t('common.change')}
                     variant="outline"
                     size="sm"
                     onPress={handlePickImage}
                   />
                   <Button
-                    title="Camera"
+                    title={t('property.takePhoto')}
                     variant="outline"
                     size="sm"
                     icon={<Camera size={14} color={COLORS.slate[700]} />}
@@ -268,7 +267,7 @@ export function AddAssetScreen() {
 
           {/* Name */}
           <Input
-            label="Asset Name"
+            label={t('asset.name')}
             placeholder="e.g., Samsung Refrigerator, Dyson Vacuum"
             value={name}
             onChangeText={setName}
@@ -278,7 +277,7 @@ export function AddAssetScreen() {
 
           {/* Category */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Category</Text>
+            <Text className="text-sm font-medium text-slate-700 mb-2">{t('asset.category')}</Text>
             <View className="flex-row flex-wrap">
               {assetCategories.map(renderCategoryButton)}
             </View>
@@ -287,7 +286,7 @@ export function AddAssetScreen() {
           {/* Room Selection */}
           {rooms.length > 0 && (
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-2">Room (Optional)</Text>
+              <Text className="text-sm font-medium text-slate-700 mb-2">{t('room.title')} ({t('common.optional')})</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -305,7 +304,7 @@ export function AddAssetScreen() {
                       !selectedRoomId ? 'text-primary-700' : 'text-slate-700'
                     }`}
                   >
-                    No Room
+                    {t('common.none')}
                   </Text>
                 </TouchableOpacity>
                 {rooms.map((room) => (
@@ -335,14 +334,14 @@ export function AddAssetScreen() {
           {/* Brand & Model */}
           <View className="flex-row gap-3 mb-4">
             <Input
-              label="Brand"
+              label={t('asset.brand')}
               placeholder="e.g., Samsung, LG"
               value={brand}
               onChangeText={setBrand}
               containerClassName="flex-1"
             />
             <Input
-              label="Model"
+              label={t('asset.model')}
               placeholder="e.g., RF28R7351SG"
               value={model}
               onChangeText={setModel}
@@ -352,7 +351,7 @@ export function AddAssetScreen() {
 
           {/* Serial Number */}
           <Input
-            label="Serial Number"
+            label={t('asset.serialNumber')}
             placeholder="Enter serial number"
             value={serialNumber}
             onChangeText={setSerialNumber}
@@ -364,7 +363,7 @@ export function AddAssetScreen() {
             <View className="flex-row items-center mb-3">
               <DollarSign size={18} color={COLORS.primary[600]} />
               <Text className="text-sm font-semibold text-slate-700 ml-2">
-                Purchase Information
+                {t('asset.purchaseDate')} {t('common.optional')}
               </Text>
             </View>
 
@@ -377,18 +376,18 @@ export function AddAssetScreen() {
                 activeOpacity={0.7}
                 className="flex-1 bg-white rounded-xl px-4 py-3 border border-slate-200"
               >
-                <Text className="text-xs text-slate-500 mb-1">Purchase Date</Text>
+                <Text className="text-xs text-slate-500 mb-1">{t('asset.purchaseDate')}</Text>
                 <View className="flex-row items-center">
                   <Calendar size={16} color={COLORS.slate[400]} />
                   <Text className="text-sm text-slate-700 ml-2">
-                    {purchaseDate ? format(purchaseDate, 'MMM d, yyyy') : 'Select date'}
+                    {purchaseDate ? format(purchaseDate, 'MMM d, yyyy') : t('common.select')}
                   </Text>
                 </View>
               </TouchableOpacity>
 
               <View className="flex-1">
                 <Input
-                  label="Purchase Price"
+                  label={t('asset.purchasePrice')}
                   placeholder="0.00"
                   value={purchasePrice}
                   onChangeText={setPurchasePrice}
@@ -404,7 +403,7 @@ export function AddAssetScreen() {
             <View className="flex-row items-center mb-3">
               <Shield size={18} color={COLORS.success} />
               <Text className="text-sm font-semibold text-slate-700 ml-2">
-                Warranty Information
+                {t('asset.warranty')} {t('common.optional')}
               </Text>
             </View>
 
@@ -416,11 +415,11 @@ export function AddAssetScreen() {
               activeOpacity={0.7}
               className="bg-white rounded-xl px-4 py-3 border border-slate-200"
             >
-              <Text className="text-xs text-slate-500 mb-1">Warranty End Date</Text>
+              <Text className="text-xs text-slate-500 mb-1">{t('asset.warrantyEndDate')}</Text>
               <View className="flex-row items-center">
                 <Calendar size={16} color={COLORS.slate[400]} />
                 <Text className="text-sm text-slate-700 ml-2">
-                  {warrantyEndDate ? format(warrantyEndDate, 'MMM d, yyyy') : 'Select date'}
+                  {warrantyEndDate ? format(warrantyEndDate, 'MMM d, yyyy') : t('common.select')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -428,8 +427,8 @@ export function AddAssetScreen() {
 
           {/* Notes */}
           <TextArea
-            label="Notes"
-            placeholder="Add any additional notes about this asset..."
+            label={t('asset.notes')}
+            placeholder={t('asset.notesPlaceholder')}
             value={notes}
             onChangeText={setNotes}
             rows={3}
@@ -444,16 +443,16 @@ export function AddAssetScreen() {
           <View className="bg-white rounded-t-3xl">
             <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
               <TouchableOpacity onPress={() => setShowPurchaseDatePicker(false)}>
-                <Text className="text-base text-slate-600">Cancel</Text>
+                <Text className="text-base text-slate-600">{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text className="text-base font-semibold text-slate-900">Purchase Date</Text>
+              <Text className="text-base font-semibold text-slate-900">{t('asset.purchaseDate')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setPurchaseDate(tempPurchaseDate);
                   setShowPurchaseDatePicker(false);
                 }}
               >
-                <Text className="text-base font-semibold text-primary-600">Done</Text>
+                <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -475,16 +474,16 @@ export function AddAssetScreen() {
           <View className="bg-white rounded-t-3xl">
             <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
               <TouchableOpacity onPress={() => setShowWarrantyDatePicker(false)}>
-                <Text className="text-base text-slate-600">Cancel</Text>
+                <Text className="text-base text-slate-600">{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text className="text-base font-semibold text-slate-900">Warranty End Date</Text>
+              <Text className="text-base font-semibold text-slate-900">{t('asset.warrantyEndDate')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setWarrantyEndDate(tempWarrantyDate);
                   setShowWarrantyDatePicker(false);
                 }}
               >
-                <Text className="text-base font-semibold text-primary-600">Done</Text>
+                <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker

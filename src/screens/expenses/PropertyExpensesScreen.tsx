@@ -21,7 +21,7 @@ import { COLORS, EXPENSE_TYPES, SHADOWS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { formatDate } from '../../utils/date';
 import { format, isThisMonth, isThisYear, startOfMonth, endOfMonth } from 'date-fns';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'PropertyExpenses'>;
@@ -40,6 +40,7 @@ export function PropertyExpensesScreen() {
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const { propertyId } = route.params;
 
   const [property, setProperty] = useState<Property | null>(null);
@@ -100,7 +101,7 @@ export function PropertyExpensesScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Expenses"
+        title={t('expense.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -130,7 +131,7 @@ export function PropertyExpensesScreen() {
             <Card variant="filled" padding="md" className="flex-1 bg-primary-50">
               <View className="flex-row items-center mb-1">
                 <TrendingUp size={14} color={COLORS.primary[600]} />
-                <Text className="text-xs text-primary-600 font-medium ml-1">This Month</Text>
+                <Text className="text-xs text-primary-600 font-medium ml-1">{t('common.thisMonth')}</Text>
               </View>
               <Text className="text-lg font-bold text-primary-700">
                 {formatCurrency(thisMonthTotal)}
@@ -139,7 +140,7 @@ export function PropertyExpensesScreen() {
             <Card variant="filled" padding="md" className="flex-1 bg-amber-50">
               <View className="flex-row items-center mb-1">
                 <Calendar size={14} color={COLORS.secondary[600]} />
-                <Text className="text-xs text-amber-600 font-medium ml-1">This Year</Text>
+                <Text className="text-xs text-amber-600 font-medium ml-1">{t('common.thisYear')}</Text>
               </View>
               <Text className="text-lg font-bold text-amber-700">
                 {formatCurrency(thisYearTotal)}
@@ -155,14 +156,14 @@ export function PropertyExpensesScreen() {
                 </View>
                 <View>
                   <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Total All Time
+                    {t('expense.totalAllTime')}
                   </Text>
                   <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatCurrency(totalAll)}
                   </Text>
                 </View>
               </View>
-              <Badge label={`${expenses.length} expenses`} variant="default" />
+              <Badge label={t('expense.expensesCount', { count: expenses.length })} variant="default" />
             </View>
           </Card>
         </View>
@@ -172,9 +173,9 @@ export function PropertyExpensesScreen() {
           <View className="flex-1 pt-8 px-8">
             <EmptyState
               icon={<DollarSign size={44} color={COLORS.slate[400]} />}
-              title="No expenses yet"
-              description="Start tracking repairs, bills, and purchases for this property"
-              actionLabel="Add Expense"
+              title={t('expense.noExpenses')}
+              description={t('expense.noExpensesDescription')}
+              actionLabel={t('expense.add')}
               onAction={() => navigation.navigate('AddExpense', { propertyId })}
             />
           </View>

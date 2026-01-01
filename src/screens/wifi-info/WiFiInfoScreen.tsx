@@ -32,7 +32,7 @@ import { WiFiInfo, Property } from '../../types';
 import { wifiInfoRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card, Button, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type WiFiInfoRouteProp = RouteProp<RootStackParamList, 'WiFiInfo'>;
@@ -42,6 +42,7 @@ export function WiFiInfoScreen() {
   const route = useRoute<WiFiInfoRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [networks, setNetworks] = useState<WiFiInfo[]>([]);
@@ -93,7 +94,7 @@ export function WiFiInfoScreen() {
   const handleCopyPassword = async (password: string) => {
     Clipboard.setString(password);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Copied', 'Password copied to clipboard');
+    Alert.alert(t('wifi.copied'), t('wifi.passwordCopied'));
   };
 
   const handleShare = async (network: WiFiInfo) => {
@@ -116,7 +117,7 @@ export function WiFiInfoScreen() {
 
   const handleSave = async () => {
     if (!formNetworkName.trim() || !formPassword.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('common.error'), t('wifi.alerts.fillRequired'));
       return;
     }
 
@@ -139,7 +140,7 @@ export function WiFiInfoScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to save WiFi info:', error);
-      Alert.alert('Error', 'Failed to save WiFi info');
+      Alert.alert(t('common.error'), t('wifi.alerts.saveFailed'));
     }
   };
 
@@ -153,12 +154,12 @@ export function WiFiInfoScreen() {
 
   const handleDelete = (network: WiFiInfo) => {
     Alert.alert(
-      'Delete Network',
-      `Are you sure you want to delete "${network.networkName}"?`,
+      t('wifi.deleteNetwork'),
+      t('wifi.deleteConfirm', { name: network.networkName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -166,7 +167,7 @@ export function WiFiInfoScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete network:', error);
-              Alert.alert('Error', 'Failed to delete network');
+              Alert.alert(t('common.error'), t('wifi.alerts.deleteFailed'));
             }
           },
         },
@@ -181,7 +182,7 @@ export function WiFiInfoScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="WiFi Networks"
+        title={t('wifi.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -215,7 +216,7 @@ export function WiFiInfoScreen() {
             <Card variant="default" padding="md">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {editingId ? 'Edit Network' : 'Add Network'}
+                  {editingId ? t('wifi.editNetwork') : t('wifi.addNetwork')}
                 </Text>
                 <TouchableOpacity onPress={resetForm} activeOpacity={0.7}>
                   <X size={22} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
@@ -224,11 +225,11 @@ export function WiFiInfoScreen() {
 
               <View className="gap-3">
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Network Name *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('wifi.networkName')} *</Text>
                   <TextInput
                     value={formNetworkName}
                     onChangeText={setFormNetworkName}
-                    placeholder="e.g., MyHomeWiFi"
+                    placeholder={t('wifi.networkNamePlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                     autoCapitalize="none"
@@ -237,11 +238,11 @@ export function WiFiInfoScreen() {
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Password *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('wifi.password')} *</Text>
                   <TextInput
                     value={formPassword}
                     onChangeText={setFormPassword}
-                    placeholder="WiFi password"
+                    placeholder={t('wifi.passwordPlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                     autoCapitalize="none"
@@ -272,17 +273,17 @@ export function WiFiInfoScreen() {
                         formIsGuest ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                       }`}
                     >
-                      Guest Network
+                      {t('wifi.guestNetwork')}
                     </Text>
                     <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Mark this as a guest network for visitors
+                      {t('wifi.guestNetworkDescription')}
                     </Text>
                   </View>
                   <Users size={20} color={formIsGuest ? COLORS.primary[600] : isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </TouchableOpacity>
 
                 <Button
-                  title={editingId ? 'Update Network' : 'Save Network'}
+                  title={editingId ? t('wifi.updateNetwork') : t('wifi.saveNetwork')}
                   onPress={handleSave}
                   variant="primary"
                   icon={<Check size={18} color="#ffffff" />}
@@ -301,13 +302,13 @@ export function WiFiInfoScreen() {
                   <Wifi size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
                 <Text className={`text-lg font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No WiFi networks saved
+                  {t('wifi.noNetworks')}
                 </Text>
                 <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Save your WiFi credentials for easy sharing with guests
+                  {t('wifi.noNetworksDescription')}
                 </Text>
                 <Button
-                  title="Add Network"
+                  title={t('wifi.addNetwork')}
                   onPress={() => setShowAddForm(true)}
                   variant="primary"
                   className="mt-4"
@@ -324,7 +325,7 @@ export function WiFiInfoScreen() {
                 <View className="flex-row items-center mb-2">
                   <Lock size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                   <Text className={`text-sm font-semibold uppercase tracking-wide ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Main Networks
+                    {t('wifi.mainNetworks')}
                   </Text>
                 </View>
 
@@ -352,7 +353,7 @@ export function WiFiInfoScreen() {
                 <View className="flex-row items-center mb-2">
                   <Users size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                   <Text className={`text-sm font-semibold uppercase tracking-wide ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Guest Networks
+                    {t('wifi.guestNetworks')}
                   </Text>
                 </View>
 

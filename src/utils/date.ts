@@ -1,9 +1,21 @@
 import { format, parseISO, isValid, formatDistanceToNow } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
 import { settingsRepository } from '../services/database/repositories/settingsRepository';
 
 // Cache for date format setting
 let cachedDateFormat: string = 'MM/dd/yyyy';
+let cachedLocale: 'tr' | 'en' = 'tr';
 let cacheInitialized = false;
+
+// Get the date-fns locale object
+function getLocale() {
+  return cachedLocale === 'tr' ? tr : enUS;
+}
+
+// Update locale cache
+export function updateLocaleCache(language: 'tr' | 'en'): void {
+  cachedLocale = language;
+}
 
 // Initialize cache from settings
 export async function initializeDateCache(): Promise<void> {
@@ -33,54 +45,54 @@ export function getCachedDateFormat(): string {
 export function formatDate(dateString: string, formatStr?: string): string {
   const date = parseISO(dateString);
   if (!isValid(date)) return dateString;
-  return format(date, formatStr || cachedDateFormat);
+  return format(date, formatStr || cachedDateFormat, { locale: getLocale() });
 }
 
 // Format a Date object using cached settings
 export function formatDateObject(date: Date, formatStr?: string): string {
   if (!isValid(date)) return '';
-  return format(date, formatStr || cachedDateFormat);
+  return format(date, formatStr || cachedDateFormat, { locale: getLocale() });
 }
 
 // Format date with time
 export function formatDateTime(dateString: string): string {
   const date = parseISO(dateString);
   if (!isValid(date)) return dateString;
-  return format(date, `${cachedDateFormat} h:mm a`);
+  return format(date, `${cachedDateFormat} HH:mm`, { locale: getLocale() });
 }
 
-// Format date in a friendly way (e.g., "December 25, 2024")
+// Format date in a friendly way (e.g., "December 25, 2024" / "25 Aralık 2024")
 export function formatDateFriendly(dateString: string): string {
   const date = parseISO(dateString);
   if (!isValid(date)) return dateString;
-  return format(date, 'MMMM d, yyyy');
+  return format(date, 'd MMMM yyyy', { locale: getLocale() });
 }
 
-// Format date with day name (e.g., "Wednesday, December 25, 2024")
+// Format date with day name (e.g., "Wednesday, December 25, 2024" / "Çarşamba, 25 Aralık 2024")
 export function formatDateWithDay(dateString: string): string {
   const date = parseISO(dateString);
   if (!isValid(date)) return dateString;
-  return format(date, 'EEEE, MMMM d, yyyy');
+  return format(date, 'EEEE, d MMMM yyyy', { locale: getLocale() });
 }
 
 // Format Date object with day name
 export function formatDateObjectWithDay(date: Date): string {
   if (!isValid(date)) return '';
-  return format(date, 'EEEE, MMMM d, yyyy');
+  return format(date, 'EEEE, d MMMM yyyy', { locale: getLocale() });
 }
 
-// Format short date (e.g., "Dec 25")
+// Format short date (e.g., "Dec 25" / "25 Ara")
 export function formatDateShort(dateString: string): string {
   const date = parseISO(dateString);
   if (!isValid(date)) return dateString;
-  return format(date, 'MMM d');
+  return format(date, 'd MMM', { locale: getLocale() });
 }
 
-// Format relative time (e.g., "2 days ago")
+// Format relative time (e.g., "2 days ago" / "2 gün önce")
 export function formatRelative(dateString: string): string {
   const date = parseISO(dateString);
   if (!isValid(date)) return dateString;
-  return formatDistanceToNow(date, { addSuffix: true });
+  return formatDistanceToNow(date, { addSuffix: true, locale: getLocale() });
 }
 
 // Alias for formatRelative

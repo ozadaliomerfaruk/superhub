@@ -17,3 +17,4 @@ export { DocumentViewer } from './DocumentViewer';
 export { Toast } from './Toast';
 export { AssetSelectionModal } from './AssetSelectionModal';
 export type { SelectedAsset } from './AssetSelectionModal';
+export { DatePickerModal } from './DatePickerModal';

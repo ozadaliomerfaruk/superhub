@@ -18,7 +18,7 @@ import { maintenanceRepository, assetRepository, propertyRepository } from '../.
 import { ScreenHeader, Card, EmptyState, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
 import { formatDate, formatRelative } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -38,6 +38,7 @@ interface NotificationItem {
 export function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -180,8 +181,8 @@ export function NotificationsScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Notifications"
-        subtitle={notifications.length > 0 ? `${notifications.length} pending` : undefined}
+        title={t('notifications.title')}
+        subtitle={notifications.length > 0 ? `${notifications.length} ${t('common.pending')}` : undefined}
         showBack
         onBack={() => navigation.goBack()}
       />
@@ -201,8 +202,8 @@ export function NotificationsScreen() {
           <View className="flex-1 pt-16 px-8">
             <EmptyState
               icon={<CheckCircle2 size={44} color={COLORS.primary[500]} />}
-              title="All caught up!"
-              description="You have no pending notifications. We'll let you know when something needs your attention."
+              title={t('notifications.empty')}
+              description={t('common.noPendingNotifications')}
             />
           </View>
         ) : (
@@ -220,10 +221,10 @@ export function NotificationsScreen() {
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className={`text-base font-semibold ${isDark ? 'text-red-300' : 'text-red-800'}`}>
-                      {highPriorityCount} urgent {highPriorityCount === 1 ? 'item' : 'items'}
+                      {highPriorityCount} {t('common.urgent')} {highPriorityCount === 1 ? t('common.item') : t('common.items')}
                     </Text>
                     <Text className={`text-sm ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-                      Requires immediate attention
+                      {t('common.requiresAttention')}
                     </Text>
                   </View>
                 </View>

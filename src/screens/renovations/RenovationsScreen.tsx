@@ -37,7 +37,7 @@ import { Renovation, Property } from '../../types';
 import { renovationRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card, Button, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 import { formatDate, getCurrentISODate } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
 
@@ -52,6 +52,7 @@ export function RenovationsScreen() {
   const route = useRoute<RenovationsRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [renovations, setRenovations] = useState<Renovation[]>([]);
@@ -115,7 +116,7 @@ export function RenovationsScreen() {
   const handleTakeBeforePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Camera permission is required');
+      Alert.alert(t('renovation.alerts.permissionDenied'), t('renovation.alerts.cameraRequired'));
       return;
     }
 
@@ -130,11 +131,11 @@ export function RenovationsScreen() {
 
   const handleSave = async () => {
     if (!formTitle.trim()) {
-      Alert.alert('Error', 'Please enter a title');
+      Alert.alert(t('common.error'), t('renovation.alerts.enterTitle'));
       return;
     }
     if (!formBeforeImage) {
-      Alert.alert('Error', 'Please add a "before" photo');
+      Alert.alert(t('common.error'), t('renovation.alerts.addBeforePhoto'));
       return;
     }
 
@@ -152,7 +153,7 @@ export function RenovationsScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to create renovation:', error);
-      Alert.alert('Error', 'Failed to create renovation');
+      Alert.alert(t('common.error'), t('renovation.alerts.createFailed'));
     }
   };
 
@@ -172,19 +173,19 @@ export function RenovationsScreen() {
         loadData();
       } catch (error) {
         console.error('Failed to add after photo:', error);
-        Alert.alert('Error', 'Failed to add after photo');
+        Alert.alert(t('common.error'), t('renovation.alerts.addPhotoFailed'));
       }
     }
   };
 
   const handleDelete = (renovation: Renovation) => {
     Alert.alert(
-      'Delete Renovation',
-      `Are you sure you want to delete "${renovation.title}"?`,
+      t('renovation.deleteRenovation'),
+      t('renovation.deleteConfirm', { title: renovation.title }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -193,7 +194,7 @@ export function RenovationsScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete:', error);
-              Alert.alert('Error', 'Failed to delete renovation');
+              Alert.alert(t('common.error'), t('renovation.alerts.deleteFailed'));
             }
           },
         },
@@ -207,7 +208,7 @@ export function RenovationsScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Renovations"
+        title={t('renovation.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -240,7 +241,7 @@ export function RenovationsScreen() {
           <View className="px-5 pt-5">
             <Card variant="default" padding="md">
               <View className="flex-row items-center justify-between mb-4">
-                <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>New Renovation</Text>
+                <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('renovation.newRenovation')}</Text>
                 <TouchableOpacity onPress={resetForm} activeOpacity={0.7}>
                   <X size={22} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </TouchableOpacity>
@@ -248,22 +249,22 @@ export function RenovationsScreen() {
 
               <View className="gap-3">
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Title *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('renovation.titleLabel')} *</Text>
                   <TextInput
                     value={formTitle}
                     onChangeText={setFormTitle}
-                    placeholder="e.g., Kitchen Remodel"
+                    placeholder={t('renovation.titlePlaceholder')}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                     placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                   />
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Description</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('renovation.description')}</Text>
                   <TextInput
                     value={formDescription}
                     onChangeText={setFormDescription}
-                    placeholder="Describe the renovation..."
+                    placeholder={t('renovation.descriptionPlaceholder')}
                     multiline
                     numberOfLines={2}
                     className={`rounded-xl px-4 py-3 text-base border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
@@ -273,7 +274,7 @@ export function RenovationsScreen() {
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Estimated Cost</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('renovation.estimatedCost')}</Text>
                   <TextInput
                     value={formCost}
                     onChangeText={setFormCost}
@@ -285,7 +286,7 @@ export function RenovationsScreen() {
                 </View>
 
                 <View>
-                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Before Photo *</Text>
+                  <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('renovation.beforePhoto')} *</Text>
                   {formBeforeImage ? (
                     <View className="relative">
                       <Image
@@ -309,7 +310,7 @@ export function RenovationsScreen() {
                         activeOpacity={0.7}
                       >
                         <Camera size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
-                        <Text className={`text-sm font-medium mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Take Photo</Text>
+                        <Text className={`text-sm font-medium mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('renovation.takePhoto')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={handlePickBeforeImage}
@@ -317,14 +318,14 @@ export function RenovationsScreen() {
                         activeOpacity={0.7}
                       >
                         <Images size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
-                        <Text className={`text-sm font-medium mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Choose</Text>
+                        <Text className={`text-sm font-medium mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('renovation.choose')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
                 </View>
 
                 <Button
-                  title="Start Tracking"
+                  title={t('renovation.startTracking')}
                   onPress={handleSave}
                   variant="primary"
                   icon={<Check size={18} color="#ffffff" />}
@@ -343,13 +344,13 @@ export function RenovationsScreen() {
                   <Sparkles size={32} color="#8b5cf6" />
                 </View>
                 <Text className={`text-lg font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No renovations yet
+                  {t('renovation.noRenovations')}
                 </Text>
                 <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Track your home improvements with before & after photos
+                  {t('renovation.noRenovationsDescription')}
                 </Text>
                 <Button
-                  title="Add Renovation"
+                  title={t('renovation.addRenovation')}
                   onPress={() => setShowAddForm(true)}
                   variant="primary"
                   className="mt-4"
@@ -366,7 +367,7 @@ export function RenovationsScreen() {
                 <View className="flex-row items-center mb-3">
                   <View className="w-2 h-2 rounded-full bg-amber-500 mr-2" />
                   <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    In Progress ({inProgress.length})
+                    {t('renovation.inProgress')} ({inProgress.length})
                   </Text>
                 </View>
 
@@ -379,7 +380,7 @@ export function RenovationsScreen() {
                         resizeMode="cover"
                       />
                       <View className="absolute top-3 left-3">
-                        <Badge label="Before" variant="warning" size="sm" />
+                        <Badge label={t('renovation.before')} variant="warning" size="sm" />
                       </View>
 
                       <View className="p-4">
@@ -394,7 +395,7 @@ export function RenovationsScreen() {
 
                         <View className="flex-row gap-2 mt-3">
                           <Button
-                            title="Add After Photo"
+                            title={t('renovation.addAfterPhoto')}
                             onPress={() => handleAddAfterPhoto(renovation)}
                             variant="primary"
                             size="sm"
@@ -422,7 +423,7 @@ export function RenovationsScreen() {
                 <View className="flex-row items-center mb-3">
                   <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
                   <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Completed ({completed.length})
+                    {t('renovation.completed')} ({completed.length})
                   </Text>
                 </View>
 

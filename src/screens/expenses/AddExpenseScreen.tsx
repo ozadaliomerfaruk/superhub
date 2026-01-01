@@ -35,10 +35,10 @@ import { ExpenseType, Room, Worker, Asset } from '../../types';
 import { expenseRepository, roomRepository, workerRepository, assetRepository, expenseAssetRepository } from '../../services/database';
 import { Button, Input, IconButton, TextArea, AssetSelectionModal, SelectedAsset } from '../../components/ui';
 import { COLORS, EXPENSE_TYPES, BILL_CATEGORIES, SHADOWS } from '../../constants/theme';
-import { useToast } from '../../contexts';
+import { useToast, useTranslation, useTheme } from '../../contexts';
 import { validateAmount, parseAmount } from '../../utils/validation';
 import { getImageQuality } from '../../utils/image';
-import { getCurrencySymbol, formatCurrency } from '../../utils/currency';
+import { getCurrencySymbol, formatCurrency, formatCurrencyInput, parseCurrencyInput } from '../../utils/currency';
 import { formatDateObjectWithDay } from '../../utils/date';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -51,20 +51,38 @@ type ExpenseTypeOption = {
   Icon: typeof Wrench;
 };
 
-const expenseTypes: ExpenseTypeOption[] = [
-  { value: 'repair', label: 'Repair', color: EXPENSE_TYPES.repair.color, Icon: Wrench },
-  { value: 'bill', label: 'Bill', color: EXPENSE_TYPES.bill.color, Icon: Receipt },
-  { value: 'maintenance', label: 'Maintenance', color: EXPENSE_TYPES.maintenance.color, Icon: Settings },
-  { value: 'purchase', label: 'Purchase', color: EXPENSE_TYPES.purchase.color, Icon: ShoppingBag },
-  { value: 'other', label: 'Other', color: EXPENSE_TYPES.other.color, Icon: MoreHorizontal },
+const getExpenseTypes = (t: any): ExpenseTypeOption[] => [
+  { value: 'repair', label: t('expense.types.repair'), color: EXPENSE_TYPES.repair.color, Icon: Wrench },
+  { value: 'bill', label: t('expense.types.bill'), color: EXPENSE_TYPES.bill.color, Icon: Receipt },
+  { value: 'maintenance', label: t('expense.types.maintenance'), color: EXPENSE_TYPES.maintenance.color, Icon: Settings },
+  { value: 'purchase', label: t('expense.types.purchase'), color: EXPENSE_TYPES.purchase.color, Icon: ShoppingBag },
+  { value: 'other', label: t('expense.types.other'), color: EXPENSE_TYPES.other.color, Icon: MoreHorizontal },
 ];
 
-const categoryOptions: Record<ExpenseType, string[]> = {
-  repair: ['Plumbing', 'Electrical', 'HVAC', 'Appliance', 'Structural', 'Roof', 'Other'],
-  bill: BILL_CATEGORIES as unknown as string[],
-  maintenance: ['HVAC Service', 'Lawn Care', 'Pool Service', 'Pest Control', 'Cleaning', 'Other'],
-  purchase: ['Appliance', 'Furniture', 'Tools', 'Supplies', 'Decor', 'Other'],
-  other: ['Other'],
+// Category keys for each expense type
+const categoryKeys: Record<ExpenseType, string[]> = {
+  repair: ['plumbing', 'electrical', 'hvac', 'appliance', 'structural', 'roof', 'other'],
+  bill: ['electricity', 'water', 'gas', 'internet', 'phone', 'insurance', 'hoa', 'propertyTax', 'lawnCare', 'pestControl', 'security', 'streaming', 'rent', 'mortgage', 'other'],
+  maintenance: ['hvacService', 'lawnCare', 'poolService', 'pestControl', 'cleaning', 'other'],
+  purchase: ['appliance', 'furniture', 'tools', 'supplies', 'decor', 'other'],
+  other: ['other'],
+};
+
+// Get translated categories
+const getCategoryOptions = (type: ExpenseType, t: (key: string) => string): { key: string; label: string }[] => {
+  const keys = categoryKeys[type];
+  if (type === 'bill') {
+    return keys.map(key => ({
+      key,
+      label: t(`bills.categories.${key}`),
+    }));
+  } else if (type === 'other') {
+    return [{ key: 'other', label: t('expense.types.other') }];
+  }
+  return keys.map(key => ({
+    key,
+    label: t(`expense.categories.${type}.${key}`),
+  }));
 };
 
 export function AddExpenseScreen() {
@@ -72,10 +90,13 @@ export function AddExpenseScreen() {
   const route = useRoute<AddExpenseRouteProp>();
   const insets = useSafeAreaInsets();
   const { showSuccess, showError } = useToast();
+  const { t } = useTranslation();
+  const { isDark } = useTheme();
 
   const [type, setType] = useState<ExpenseType>('repair');
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
+  const [displayAmount, setDisplayAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date());
   const [receiptUri, setReceiptUri] = useState<string | undefined>();
@@ -114,16 +135,17 @@ export function AddExpenseScreen() {
 
   useEffect(() => {
     // Reset category when type changes, or set initial category
-    const categories = categoryOptions[type];
-    if (categories.length > 0 && (!category || !categories.includes(category))) {
-      setCategory(categories[0]);
+    const categories = getCategoryOptions(type, t);
+    const categoryKeysList = categories.map(c => c.key);
+    if (categories.length > 0 && (!category || !categoryKeysList.includes(category))) {
+      setCategory(categories[0].key);
     }
-  }, [type, category]);
+  }, [type, category, t]);
 
   const handlePickReceipt = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionNeeded'), t('common.photoLibraryPermission'));
       return;
     }
 
@@ -142,7 +164,7 @@ export function AddExpenseScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant camera access');
+      Alert.alert(t('common.permissionNeeded'), t('common.cameraPermission'));
       return;
     }
 
@@ -157,22 +179,29 @@ export function AddExpenseScreen() {
     }
   };
 
-  const handleSave = async () => {
-    // Validate amount
-    const amountValidation = validateAmount(amount);
-    if (!amountValidation.isValid) {
-      Alert.alert('Invalid Amount', amountValidation.error);
-      return;
-    }
+  // Handle amount input with currency formatting
+  const handleAmountChange = (value: string) => {
+    // Keep raw digits for storage
+    const rawValue = value.replace(/[^\d.,]/g, '');
+    setAmount(rawValue);
 
-    const parsedAmount = parseAmount(amount);
+    // Format for display
+    const formatted = formatCurrencyInput(rawValue);
+    setDisplayAmount(formatted);
+  };
+
+  const handleSave = async () => {
+    // Parse amount from formatted display value
+    const parsedAmount = parseCurrencyInput(displayAmount);
+
+    // Validate amount
     if (parsedAmount <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter an amount greater than zero');
+      Alert.alert(t('common.invalidAmount'), t('common.amountGreaterThanZero'));
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Required', 'Please enter a description');
+      Alert.alert(t('common.required'), t('expense.descriptionRequired'));
       return;
     }
 
@@ -180,8 +209,8 @@ export function AddExpenseScreen() {
     const totalAssetAmount = selectedAssets.reduce((sum, a) => sum + a.amount, 0);
     if (totalAssetAmount > parsedAmount) {
       Alert.alert(
-        'Invalid Asset Amounts',
-        `The sum of asset amounts (${formatCurrency(totalAssetAmount)}) exceeds the total expense amount (${formatCurrency(parsedAmount)})`
+        t('common.invalidAssetAmounts'),
+        `${t('common.assetAmountsExceed')} (${formatCurrency(totalAssetAmount)}) ${t('common.totalExpenseAmount')} (${formatCurrency(parsedAmount)})`
       );
       return;
     }
@@ -214,11 +243,11 @@ export function AddExpenseScreen() {
         await workerRepository.updateTotalPaid(selectedWorkerId, parsedAmount);
       }
 
-      showSuccess('Expense added successfully');
+      showSuccess(t('expense.addSuccess'));
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create expense:', error);
-      showError('Failed to create expense. Please try again.');
+      showError(t('expense.addError'));
     } finally {
       setLoading(false);
     }
@@ -234,9 +263,9 @@ export function AddExpenseScreen() {
         onPress={() => setType(item.value)}
         activeOpacity={0.7}
         className={`flex-1 items-center py-3 rounded-xl border-2 ${
-          isSelected ? 'border-primary-500' : 'border-slate-200'
+          isSelected ? 'border-primary-500' : isDark ? 'border-slate-700' : 'border-slate-200'
         }`}
-        style={isSelected ? { backgroundColor: COLORS.primary[50] } : { backgroundColor: '#fff' }}
+        style={isSelected ? { backgroundColor: isDark ? COLORS.primary[900] + '40' : COLORS.primary[50] } : { backgroundColor: isDark ? COLORS.slate[800] : '#fff' }}
       >
         <View
           className="w-10 h-10 rounded-full items-center justify-center mb-1.5"
@@ -246,7 +275,7 @@ export function AddExpenseScreen() {
         </View>
         <Text
           className={`text-xs font-semibold ${
-            isSelected ? 'text-primary-700' : 'text-slate-600'
+            isSelected ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-600'
           }`}
         >
           {item.label}
@@ -255,20 +284,21 @@ export function AddExpenseScreen() {
     );
   };
 
-  const currentCategories = categoryOptions[type];
+  const currentCategories = getCategoryOptions(type, t);
+  const expenseTypes = getExpenseTypes(t);
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`} style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
         <IconButton
-          icon={<X size={22} color={COLORS.slate[600]} />}
+          icon={<X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />}
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className="text-lg font-bold text-slate-900">Add Expense</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('expense.add')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -287,14 +317,14 @@ export function AddExpenseScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Amount Section */}
-          <View className="bg-primary-50 rounded-2xl p-5 mb-5 items-center">
-            <Text className="text-sm font-medium text-primary-700 mb-2">Amount</Text>
+          <View className={`rounded-2xl p-5 mb-5 items-center ${isDark ? 'bg-primary-900/40' : 'bg-primary-50'}`}>
+            <Text className="text-sm font-medium text-primary-700 mb-2">{t('expense.amount')}</Text>
             <View className="flex-row items-center">
               <Text className="text-3xl font-bold text-primary-700">{getCurrencySymbol()}</Text>
               <Input
-                placeholder="0.00"
-                value={amount}
-                onChangeText={setAmount}
+                placeholder="0,00"
+                value={displayAmount}
+                onChangeText={handleAmountChange}
                 keyboardType="decimal-pad"
                 containerClassName="flex-1 ml-1"
                 className="text-3xl font-bold text-primary-700 bg-transparent border-0 text-center"
@@ -304,7 +334,7 @@ export function AddExpenseScreen() {
 
           {/* Expense Type */}
           <View className="mb-5">
-            <Text className="text-sm font-medium text-slate-700 mb-3">Expense Type</Text>
+            <Text className={`text-sm font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('expense.type')}</Text>
             <View className="flex-row gap-2">
               {expenseTypes.map(renderTypeButton)}
             </View>
@@ -312,7 +342,7 @@ export function AddExpenseScreen() {
 
           {/* Category */}
           <View className="mb-5">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Category</Text>
+            <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('expense.category')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -320,21 +350,21 @@ export function AddExpenseScreen() {
             >
               {currentCategories.map((cat) => (
                 <TouchableOpacity
-                  key={cat}
-                  onPress={() => setCategory(cat)}
+                  key={cat.key}
+                  onPress={() => setCategory(cat.key)}
                   activeOpacity={0.7}
                   className={`px-4 py-2.5 rounded-xl mr-2 border-2 ${
-                    category === cat
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-slate-200 bg-white'
+                    category === cat.key
+                      ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                      : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                   }`}
                 >
                   <Text
                     className={`text-sm font-medium ${
-                      category === cat ? 'text-primary-700' : 'text-slate-700'
+                      category === cat.key ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                     }`}
                   >
-                    {cat}
+                    {cat.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -343,8 +373,8 @@ export function AddExpenseScreen() {
 
           {/* Description */}
           <Input
-            label="Description"
-            placeholder="What was this expense for?"
+            label={t('expense.description')}
+            placeholder={t('expense.descriptionPlaceholder')}
             value={description}
             onChangeText={setDescription}
             containerClassName="mb-4"
@@ -353,17 +383,17 @@ export function AddExpenseScreen() {
 
           {/* Date */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Date</Text>
+            <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('expense.date')}</Text>
             <TouchableOpacity
               onPress={() => {
                 setTempDate(date);
                 setShowDatePicker(true);
               }}
               activeOpacity={0.7}
-              className="bg-white rounded-xl px-4 py-3.5 border border-slate-200 flex-row items-center"
+              className={`rounded-xl px-4 py-3.5 border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
             >
-              <Calendar size={18} color={COLORS.slate[500]} />
-              <Text className="text-base text-slate-700 ml-3">
+              <Calendar size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+              <Text className={`text-base ml-3 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                 {formatDateObjectWithDay(date)}
               </Text>
             </TouchableOpacity>
@@ -372,7 +402,7 @@ export function AddExpenseScreen() {
           {/* Room Selection */}
           {rooms.length > 0 && (
             <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-700 mb-2">Room (Optional)</Text>
+              <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('common.roomOptional')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -382,15 +412,17 @@ export function AddExpenseScreen() {
                   onPress={() => setSelectedRoomId(undefined)}
                   activeOpacity={0.7}
                   className={`px-4 py-2.5 rounded-xl mr-2 border-2 ${
-                    !selectedRoomId ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                    !selectedRoomId
+                      ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                      : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                   }`}
                 >
                   <Text
                     className={`text-sm font-medium ${
-                      !selectedRoomId ? 'text-primary-700' : 'text-slate-700'
+                      !selectedRoomId ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                     }`}
                   >
-                    No Room
+                    {t('common.noRoom')}
                   </Text>
                 </TouchableOpacity>
                 {rooms.map((room) => (
@@ -400,13 +432,13 @@ export function AddExpenseScreen() {
                     activeOpacity={0.7}
                     className={`px-4 py-2.5 rounded-xl mr-2 border-2 ${
                       selectedRoomId === room.id
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-slate-200 bg-white'
+                        ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                        : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        selectedRoomId === room.id ? 'text-primary-700' : 'text-slate-700'
+                        selectedRoomId === room.id ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                       }`}
                     >
                       {room.name}
@@ -421,9 +453,9 @@ export function AddExpenseScreen() {
           {workers.length > 0 && (
             <View className="mb-4">
               <View className="flex-row items-center mb-2">
-                <Users size={16} color={COLORS.slate[500]} />
-                <Text className="text-sm font-medium text-slate-700 ml-1.5">
-                  Worker (Optional)
+                <Users size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {t('common.workerOptional')}
                 </Text>
               </View>
               <ScrollView
@@ -435,15 +467,17 @@ export function AddExpenseScreen() {
                   onPress={() => setSelectedWorkerId(undefined)}
                   activeOpacity={0.7}
                   className={`px-4 py-2.5 rounded-xl mr-2 border-2 ${
-                    !selectedWorkerId ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                    !selectedWorkerId
+                      ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                      : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                   }`}
                 >
                   <Text
                     className={`text-sm font-medium ${
-                      !selectedWorkerId ? 'text-primary-700' : 'text-slate-700'
+                      !selectedWorkerId ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                     }`}
                   >
-                    No Worker
+                    {t('common.noWorker')}
                   </Text>
                 </TouchableOpacity>
                 {workers.map((worker) => (
@@ -453,13 +487,13 @@ export function AddExpenseScreen() {
                     activeOpacity={0.7}
                     className={`px-4 py-2.5 rounded-xl mr-2 border-2 ${
                       selectedWorkerId === worker.id
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-slate-200 bg-white'
+                        ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                        : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        selectedWorkerId === worker.id ? 'text-primary-700' : 'text-slate-700'
+                        selectedWorkerId === worker.id ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                       }`}
                     >
                       {worker.name}
@@ -474,21 +508,21 @@ export function AddExpenseScreen() {
           {assets.length > 0 && (
             <View className="mb-4">
               <View className="flex-row items-center mb-2">
-                <Package size={16} color={COLORS.slate[500]} />
-                <Text className="text-sm font-medium text-slate-700 ml-1.5">
-                  Related Assets (Optional)
+                <Package size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {t('common.relatedAssetsOptional')}
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setShowAssetModal(true)}
                 activeOpacity={0.7}
-                className="bg-white rounded-xl px-4 py-3.5 border border-slate-200 flex-row items-center"
+                className={`rounded-xl px-4 py-3.5 border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
               >
                 {selectedAssets.length > 0 ? (
                   <View className="flex-1">
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-base text-slate-700">
-                        {selectedAssets.length} asset{selectedAssets.length > 1 ? 's' : ''} selected
+                      <Text className={`text-base ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                        {selectedAssets.length} {t('common.assetSelected', { count: selectedAssets.length })}
                       </Text>
                       <Text className="text-sm font-semibold text-primary-600">
                         {formatCurrency(selectedAssets.reduce((sum, a) => sum + a.amount, 0))}
@@ -500,17 +534,17 @@ export function AddExpenseScreen() {
                         return asset ? (
                           <View
                             key={selected.assetId}
-                            className="bg-slate-100 rounded-lg px-2 py-0.5"
+                            className={`rounded-lg px-2 py-0.5 ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
                           >
-                            <Text className="text-xs text-slate-600">
+                            <Text className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                               {asset.name}: {formatCurrency(selected.amount)}
                             </Text>
                           </View>
                         ) : null;
                       })}
                       {selectedAssets.length > 3 && (
-                        <View className="bg-slate-100 rounded-lg px-2 py-0.5">
-                          <Text className="text-xs text-slate-600">
+                        <View className={`rounded-lg px-2 py-0.5 ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                          <Text className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                             +{selectedAssets.length - 3} more
                           </Text>
                         </View>
@@ -520,8 +554,8 @@ export function AddExpenseScreen() {
                 ) : (
                   <>
                     <Package size={18} color={COLORS.slate[400]} />
-                    <Text className="text-base text-slate-500 ml-3 flex-1">
-                      Select assets for this expense
+                    <Text className={`text-base ml-3 flex-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {t('common.selectAssets')}
                     </Text>
                   </>
                 )}
@@ -532,12 +566,12 @@ export function AddExpenseScreen() {
 
           {/* Receipt */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">Receipt (Optional)</Text>
+            <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('expense.receiptOptional')}</Text>
             <View className="flex-row items-center">
               <TouchableOpacity
                 onPress={handlePickReceipt}
                 activeOpacity={0.8}
-                className="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 items-center justify-center border-2 border-dashed border-slate-300"
+                className={`w-20 h-20 rounded-xl overflow-hidden items-center justify-center border-2 border-dashed ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-300'}`}
               >
                 {receiptUri ? (
                   <Image
@@ -548,7 +582,7 @@ export function AddExpenseScreen() {
                 ) : (
                   <View className="items-center">
                     <Receipt size={24} color={COLORS.slate[400]} />
-                    <Text className="text-xs text-slate-500 mt-1">Add</Text>
+                    <Text className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.add')}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -556,16 +590,16 @@ export function AddExpenseScreen() {
               {receiptUri && (
                 <View className="ml-3 gap-2">
                   <Button
-                    title="Change"
+                    title={t('common.change')}
                     variant="outline"
                     size="sm"
                     onPress={handlePickReceipt}
                   />
                   <Button
-                    title="Camera"
+                    title={t('common.camera')}
                     variant="outline"
                     size="sm"
-                    icon={<Camera size={14} color={COLORS.slate[700]} />}
+                    icon={<Camera size={14} color={isDark ? COLORS.slate[300] : COLORS.slate[700]} />}
                     onPress={handleTakePhoto}
                   />
                 </View>
@@ -573,10 +607,10 @@ export function AddExpenseScreen() {
 
               {!receiptUri && (
                 <Button
-                  title="Take Photo"
+                  title={t('common.takePhoto')}
                   variant="outline"
                   size="sm"
-                  icon={<Camera size={14} color={COLORS.slate[700]} />}
+                  icon={<Camera size={14} color={isDark ? COLORS.slate[300] : COLORS.slate[700]} />}
                   onPress={handleTakePhoto}
                   className="ml-3"
                 />
@@ -589,19 +623,19 @@ export function AddExpenseScreen() {
       {/* Date Picker Modal */}
       <Modal visible={showDatePicker} transparent animationType="slide">
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl">
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
+          <View className={`rounded-t-3xl ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text className="text-base text-slate-600">Cancel</Text>
+                <Text className={`text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text className="text-base font-semibold text-slate-900">Select Date</Text>
+              <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('common.selectDate')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setDate(tempDate);
                   setShowDatePicker(false);
                 }}
               >
-                <Text className="text-base font-semibold text-primary-600">Done</Text>
+                <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -612,6 +646,7 @@ export function AddExpenseScreen() {
                 if (selectedDate) setTempDate(selectedDate);
               }}
               style={{ height: 200 }}
+              textColor={isDark ? '#fff' : '#1e293b'}
             />
           </View>
         </View>

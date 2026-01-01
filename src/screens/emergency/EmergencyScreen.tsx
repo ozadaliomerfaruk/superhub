@@ -33,7 +33,7 @@ import { EmergencyShutoff, Property } from '../../types';
 import { emergencyRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card, PressableCard, Button, EmptyState, IconButton, InputDialog } from '../../components/ui';
 import { COLORS, EMERGENCY_TYPES } from '../../constants/theme';
-import { useToast, useTheme } from '../../contexts';
+import { useToast, useTheme, useTranslation } from '../../contexts';
 import { getImageQuality } from '../../utils/image';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,11 +46,11 @@ const EMERGENCY_ICON_MAP = {
   hvac: Fan,
 };
 
-const EMERGENCY_NUMBERS = [
-  { name: 'Emergency Services', number: '911', icon: AlertTriangle, color: '#dc2626' },
-  { name: 'Gas Company', number: '1-800-GAS-LEAK', icon: Flame, color: '#f97316' },
-  { name: 'Electric Company', number: '1-800-POWER', icon: Zap, color: '#eab308' },
-  { name: 'Water Company', number: '1-800-WATER', icon: Droplets, color: '#0ea5e9' },
+const EMERGENCY_NUMBER_KEYS = [
+  { key: 'emergency', number: '112', icon: AlertTriangle, color: '#dc2626' },
+  { key: 'gasCompany', number: '187', icon: Flame, color: '#f97316' },
+  { key: 'electricCompany', number: '186', icon: Zap, color: '#eab308' },
+  { key: 'waterCompany', number: '185', icon: Droplets, color: '#0ea5e9' },
 ];
 
 export function EmergencyScreen() {
@@ -59,6 +59,10 @@ export function EmergencyScreen() {
   const { propertyId } = route.params;
   const { showSuccess, showError } = useToast();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
+  const getEmergencyContactLabel = (key: string) => t(`emergencyScreen.contacts.${key}`);
+  const getShutoffTypeLabel = (type: string) => t(`emergencyScreen.types.${type}`);
 
   const [property, setProperty] = useState<Property | null>(null);
   const [shutoffs, setShutoffs] = useState<EmergencyShutoff[]>([]);
@@ -135,17 +139,17 @@ export function EmergencyScreen() {
           type: dialogType,
           location: location.trim(),
         });
-        showSuccess('Shutoff location added');
+        showSuccess(t('common.success'));
       } else if (editingShutoff) {
         await emergencyRepository.update(editingShutoff.id, {
           location: location.trim(),
         });
-        showSuccess('Shutoff location updated');
+        showSuccess(t('common.success'));
       }
       loadData();
     } catch (error) {
       console.error('Failed to save shutoff:', error);
-      showError(dialogMode === 'add' ? 'Failed to add shutoff location' : 'Failed to update shutoff');
+      showError(dialogMode === 'add' ? t('emergencyScreen.alerts.addFailed') : t('emergencyScreen.alerts.updateFailed'));
     } finally {
       setShowLocationDialog(false);
       setEditingShutoff(null);
@@ -153,14 +157,13 @@ export function EmergencyScreen() {
   };
 
   const handleDeleteShutoff = (shutoff: EmergencyShutoff) => {
-    const typeConfig = EMERGENCY_TYPES[shutoff.type];
     Alert.alert(
-      'Delete Shutoff',
-      `Are you sure you want to delete this ${typeConfig.label.toLowerCase()} location?`,
+      t('emergencyScreen.deleteTitle'),
+      t('emergencyScreen.deleteMessage', { type: getShutoffTypeLabel(shutoff.type).toLowerCase() }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -168,7 +171,7 @@ export function EmergencyScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete shutoff:', error);
-              Alert.alert('Error', 'Failed to delete shutoff');
+              Alert.alert(t('common.error'), t('emergencyScreen.alerts.deleteFailed'));
             }
           },
         },
@@ -189,11 +192,11 @@ export function EmergencyScreen() {
         await emergencyRepository.update(shutoff.id, {
           imageUri: result.assets[0].uri,
         });
-        showSuccess('Photo added');
+        showSuccess(t('common.success'));
         loadData();
       } catch (error) {
         console.error('Failed to add photo:', error);
-        showError('Failed to add photo');
+        showError(t('emergencyScreen.alerts.photoFailed'));
       }
     }
   };
@@ -215,7 +218,7 @@ export function EmergencyScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Emergency Info"
+        title={t('emergency.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -237,18 +240,18 @@ export function EmergencyScreen() {
           <View className="flex-row items-center mb-3">
             <AlertTriangle size={18} color={COLORS.error} />
             <Text className={`text-sm font-semibold uppercase tracking-wide ml-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Emergency Contacts
+              {t('emergencyScreen.emergencyContacts')}
             </Text>
           </View>
           <Card variant="default" padding="none" className="overflow-hidden">
-            {EMERGENCY_NUMBERS.map((contact, index) => {
+            {EMERGENCY_NUMBER_KEYS.map((contact, index) => {
               const Icon = contact.icon;
               return (
                 <TouchableOpacity
-                  key={contact.name}
+                  key={contact.key}
                   onPress={() => handleCall(contact.number)}
                   className={`flex-row items-center px-4 py-3.5 ${
-                    index < EMERGENCY_NUMBERS.length - 1 ? `border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}` : ''
+                    index < EMERGENCY_NUMBER_KEYS.length - 1 ? `border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}` : ''
                   }`}
                   activeOpacity={0.7}
                 >
@@ -259,7 +262,7 @@ export function EmergencyScreen() {
                     <Icon size={20} color={contact.color} />
                   </View>
                   <View className="flex-1 ml-3">
-                    <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{contact.name}</Text>
+                    <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{getEmergencyContactLabel(contact.key)}</Text>
                     <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{contact.number}</Text>
                   </View>
                   <View className="bg-primary-500 px-3 py-1.5 rounded-lg">
@@ -275,7 +278,7 @@ export function EmergencyScreen() {
         <View className="px-5 mt-6">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Shutoff Locations
+              {t('emergencyScreen.shutoffLocations')}
             </Text>
           </View>
 
@@ -286,10 +289,10 @@ export function EmergencyScreen() {
                   <MapPin size={28} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
                 <Text className={`font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  No shutoff locations added
+                  {t('emergencyScreen.noShutoffLocations')}
                 </Text>
                 <Text className={`text-sm text-center mt-1 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Add the locations of your water, gas, and electrical shutoffs for quick access during emergencies
+                  {t('emergencyScreen.addShutoffDescription')}
                 </Text>
               </View>
             </Card>
@@ -311,7 +314,7 @@ export function EmergencyScreen() {
                         </View>
                         <View className="flex-1 ml-3">
                           <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            {typeConfig.label}
+                            {getShutoffTypeLabel(type)}
                           </Text>
                           <View className="flex-row items-center mt-1">
                             <MapPin size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
@@ -348,7 +351,7 @@ export function EmergencyScreen() {
                         >
                           <Camera size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
                           <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                            {shutoff.imageUri ? 'Update Photo' : 'Add Photo'}
+                            {shutoff.imageUri ? t('emergencyScreen.updatePhoto') : t('emergencyScreen.addPhoto')}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -378,7 +381,7 @@ export function EmergencyScreen() {
         {availableTypes.length > 0 && (
           <View className="px-5 mt-6 mb-8">
             <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Add Shutoff Location
+              {t('emergencyScreen.addShutoffLocation')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {availableTypes.map((type) => {
@@ -399,7 +402,7 @@ export function EmergencyScreen() {
                       <Icon size={16} color={typeConfig.color} />
                     </View>
                     <Text className={`text-sm font-medium ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {typeConfig.label}
+                      {getShutoffTypeLabel(type)}
                     </Text>
                     <Plus size={16} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} className="ml-2" />
                   </TouchableOpacity>
@@ -417,9 +420,9 @@ export function EmergencyScreen() {
                 <Info size={16} color={COLORS.warning} />
               </View>
               <View className="flex-1 ml-3">
-                <Text className={`text-sm font-semibold ${isDark ? 'text-amber-400' : 'text-amber-800'}`}>Safety Tip</Text>
+                <Text className={`text-sm font-semibold ${isDark ? 'text-amber-400' : 'text-amber-800'}`}>{t('emergencyScreen.safetyTip')}</Text>
                 <Text className={`text-sm mt-1 leading-relaxed ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
-                  Take photos of your shutoff valves and breaker panels. In an emergency, clear photos help you or emergency responders quickly locate and operate them.
+                  {t('emergencyScreen.safetyTipDescription')}
                 </Text>
               </View>
             </View>
@@ -430,11 +433,11 @@ export function EmergencyScreen() {
       {/* Location Input Dialog */}
       <InputDialog
         visible={showLocationDialog}
-        title={dialogMode === 'add' ? `Add ${EMERGENCY_TYPES[dialogType].label}` : 'Edit Location'}
-        message={dialogMode === 'add' ? 'Enter the location (e.g., "Basement, behind water heater")' : 'Update the shutoff location'}
-        placeholder="Location"
+        title={dialogMode === 'add' ? t('emergencyScreen.dialogs.addTitle', { type: getShutoffTypeLabel(dialogType) }) : t('emergencyScreen.dialogs.editTitle')}
+        message={dialogMode === 'add' ? t('emergencyScreen.dialogs.addMessage') : t('emergencyScreen.dialogs.editMessage')}
+        placeholder={t('emergencyScreen.dialogs.locationPlaceholder')}
         defaultValue={dialogDefaultValue}
-        confirmText={dialogMode === 'add' ? 'Add' : 'Save'}
+        confirmText={dialogMode === 'add' ? t('emergencyScreen.dialogs.add') : t('common.save')}
         onCancel={() => {
           setShowLocationDialog(false);
           setEditingShutoff(null);

@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Lock,
   Trash2,
+  Globe,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { ListItem, Divider, SelectDialog, PasswordDialog } from '../../components/ui';
@@ -28,6 +29,7 @@ import { authService } from '../../services/auth';
 import {
   useTheme,
   useSettings,
+  useLanguage,
   CURRENCY_OPTIONS,
   DATE_FORMAT_OPTIONS,
   PHOTO_QUALITY_OPTIONS,
@@ -36,23 +38,29 @@ import {
   getPhotoQualityLabel,
 } from '../../contexts';
 import { AppSettings } from '../../types';
-
-const THEME_OPTIONS = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'System Default', value: 'system' },
-];
-
-const THEME_LABELS: Record<string, string> = {
-  light: 'Light',
-  dark: 'Dark',
-  system: 'System default',
-};
+import { SUPPORTED_LANGUAGES, SupportedLanguage } from '../../i18n';
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { themeMode, setThemeMode, isDark } = useTheme();
   const { settings, updateCurrency, updateDateFormat, updatePhotoQuality, updateEncryptExports } = useSettings();
+  const { language, setLanguage, t, supportedLanguages } = useLanguage();
+
+  // Theme options using translations
+  const THEME_OPTIONS = [
+    { label: t('settingsScreen.themeOptions.light'), value: 'light' },
+    { label: t('settingsScreen.themeOptions.dark'), value: 'dark' },
+    { label: t('settingsScreen.themeOptions.system'), value: 'system' },
+  ];
+
+  const getThemeLabel = (mode: string) => {
+    const labels: Record<string, string> = {
+      light: t('settingsScreen.themeOptions.light'),
+      dark: t('settingsScreen.themeOptions.dark'),
+      system: t('settingsScreen.themeOptions.system'),
+    };
+    return labels[mode] || mode;
+  };
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [appLockEnabled, setAppLockEnabled] = useState(false);
@@ -62,8 +70,25 @@ export function SettingsScreen() {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [showDateFormatPicker, setShowDateFormatPicker] = useState(false);
   const [showPhotoQualityPicker, setShowPhotoQualityPicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [showExportPasswordDialog, setShowExportPasswordDialog] = useState(false);
   const [showImportPasswordDialog, setShowImportPasswordDialog] = useState(false);
+
+  // Language options for picker
+  const languageOptions = supportedLanguages.map(lang => ({
+    label: `${lang.flag} ${lang.nativeName}`,
+    value: lang.code,
+  }));
+
+  const handleLanguageSelect = async (value: string) => {
+    setShowLanguagePicker(false);
+    try {
+      await setLanguage(value as SupportedLanguage);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (error) {
+      Alert.alert(t('common.error'), t('settingsScreen.alerts.languageError'));
+    }
+  };
 
   const loadSettings = useCallback(async () => {
     const [lockEnabled, biometrics] = await Promise.all([
@@ -87,7 +112,7 @@ export function SettingsScreen() {
       await updateCurrency(value);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (error) {
-      Alert.alert('Error', 'Failed to update currency');
+      Alert.alert(t('common.error'), t('settingsScreen.alerts.currencyError'));
     }
   };
 
@@ -97,7 +122,7 @@ export function SettingsScreen() {
       await updateDateFormat(value);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (error) {
-      Alert.alert('Error', 'Failed to update date format');
+      Alert.alert(t('common.error'), t('settingsScreen.alerts.dateFormatError'));
     }
   };
 
@@ -107,7 +132,7 @@ export function SettingsScreen() {
       await updatePhotoQuality(value as AppSettings['photoQuality']);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (error) {
-      Alert.alert('Error', 'Failed to update photo quality');
+      Alert.alert(t('common.error'), t('settingsScreen.alerts.photoQualityError'));
     }
   };
 
@@ -130,8 +155,8 @@ export function SettingsScreen() {
   const handleAppLockToggle = async (enabled: boolean) => {
     if (enabled && !biometricAvailable) {
       Alert.alert(
-        'Biometric Not Available',
-        'Please set up Face ID or Touch ID in your device settings first.'
+        t('settingsScreen.alerts.biometricNotAvailable'),
+        t('settingsScreen.alerts.biometricSetupRequired')
       );
       return;
     }
@@ -140,7 +165,7 @@ export function SettingsScreen() {
       // Verify user can authenticate before enabling
       const result = await authService.authenticate();
       if (!result.success) {
-        Alert.alert('Authentication Failed', result.error || 'Could not verify your identity');
+        Alert.alert(t('settingsScreen.alerts.authFailed'), result.error || t('settingsScreen.alerts.authError'));
         return;
       }
     }
@@ -150,7 +175,7 @@ export function SettingsScreen() {
       setAppLockEnabled(enabled);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (error) {
-      Alert.alert('Error', 'Failed to update app lock setting');
+      Alert.alert(t('common.error'), t('settingsScreen.alerts.appLockError'));
     }
   };
 
@@ -163,12 +188,12 @@ export function SettingsScreen() {
     } else {
       // Regular export without encryption
       Alert.alert(
-        'Export Data',
-        'Your data will be exported as a JSON file containing all your properties, expenses, workers, and more.',
+        t('settingsScreen.alerts.exportTitle'),
+        t('settingsScreen.alerts.exportMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Export',
+            text: t('settingsScreen.alerts.export'),
             onPress: () => performExport(),
           },
         ]
@@ -186,10 +211,10 @@ export function SettingsScreen() {
           : Haptics.NotificationFeedbackType.Error
       ).catch(() => {});
       if (!result.success) {
-        Alert.alert('Export Failed', result.error || 'Unknown error occurred');
+        Alert.alert(t('settingsScreen.alerts.exportFailed'), result.error || t('settingsScreen.alerts.unexpectedError'));
       }
     } catch (error) {
-      Alert.alert('Export Failed', 'An unexpected error occurred');
+      Alert.alert(t('settingsScreen.alerts.exportFailed'), t('settingsScreen.alerts.unexpectedError'));
     } finally {
       setIsExporting(false);
     }
@@ -202,12 +227,12 @@ export function SettingsScreen() {
 
   const handleImportData = async () => {
     Alert.alert(
-      'Import Data',
-      'Select a backup file to restore your data. This will merge with your existing data.',
+      t('settingsScreen.alerts.importTitle'),
+      t('settingsScreen.alerts.importMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Choose File',
+          text: t('settingsScreen.alerts.chooseFile'),
           onPress: () => performImport(),
         },
       ]
@@ -233,14 +258,20 @@ export function SettingsScreen() {
       ).catch(() => {});
       if (result.success && result.stats) {
         Alert.alert(
-          'Import Successful',
-          `Imported:\n${result.stats.properties} properties\n${result.stats.rooms} rooms\n${result.stats.assets} assets\n${result.stats.expenses} expenses\n${result.stats.workers} workers`
+          t('settingsScreen.alerts.importSuccess'),
+          t('settingsScreen.alerts.importStats', {
+            properties: result.stats.properties,
+            rooms: result.stats.rooms,
+            assets: result.stats.assets,
+            expenses: result.stats.expenses,
+            workers: result.stats.workers,
+          })
         );
       } else if (!result.success && result.error !== 'No file selected') {
-        Alert.alert('Import Failed', result.error || 'Unknown error occurred');
+        Alert.alert(t('settingsScreen.alerts.importFailed'), result.error || t('settingsScreen.alerts.unexpectedError'));
       }
     } catch (error) {
-      Alert.alert('Import Failed', 'An unexpected error occurred');
+      Alert.alert(t('settingsScreen.alerts.importFailed'), t('settingsScreen.alerts.unexpectedError'));
     } finally {
       setIsImporting(false);
     }
@@ -256,26 +287,26 @@ export function SettingsScreen() {
       await updateEncryptExports(enabled);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (error) {
-      Alert.alert('Error', 'Failed to update encryption setting');
+      Alert.alert(t('common.error'), t('settingsScreen.alerts.encryptionError'));
     }
   };
 
   const handleClearData = () => {
     Alert.alert(
-      'Clear All Data',
-      'This will permanently delete all your data including properties, expenses, workers, and photos. This action cannot be undone.',
+      t('settingsScreen.alerts.clearDataTitle'),
+      t('settingsScreen.alerts.clearDataMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete Everything',
+          text: t('settingsScreen.alerts.deleteEverything'),
           style: 'destructive',
           onPress: async () => {
             try {
               await backupService.clearAllData();
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-              Alert.alert('Success', 'All data has been deleted');
+              Alert.alert(t('settingsScreen.alerts.success'), t('settingsScreen.alerts.dataCleared'));
             } catch (error) {
-              Alert.alert('Error', 'Failed to clear data');
+              Alert.alert(t('common.error'), t('settingsScreen.alerts.clearError'));
             }
           },
         },
@@ -286,50 +317,44 @@ export function SettingsScreen() {
   // Helper to get photo quality subtitle with recommendation
   const getPhotoQualitySubtitle = () => {
     const quality = settings?.photoQuality || 'high';
-    const label = getPhotoQualityLabel(quality);
-    return quality === 'high' ? `${label} (Recommended)` : label;
+    const label = language === 'tr'
+      ? t(`settingsScreen.photoQualityOptions.${quality}`)
+      : getPhotoQualityLabel(quality);
+    return quality === 'high' ? `${label} (${t('settingsScreen.recommended')})` : label;
   };
 
   // Support handlers
   const handleHelpSupport = () => {
     Alert.alert(
-      'Help & Support',
-      'HomeTrack is your complete home management solution.\n\n' +
-      'Key Features:\n' +
-      '• Track multiple properties\n' +
-      '• Log expenses and receipts\n' +
-      '• Schedule maintenance reminders\n' +
-      '• Store important documents\n' +
-      '• Manage contractor contacts\n\n' +
-      'Need help? Tap on any screen\'s info button for tips.',
-      [{ text: 'Got it', style: 'default' }]
+      t('settingsScreen.alerts.helpTitle'),
+      t('settingsScreen.alerts.helpMessage'),
+      [{ text: t('settingsScreen.alerts.gotIt'), style: 'default' }]
     );
   };
 
   const handleSendFeedback = () => {
     Alert.alert(
-      'Send Feedback',
-      'We appreciate your feedback! As this app is under development, your input helps us improve.\n\n' +
-      'What would you like to share?',
+      t('settingsScreen.alerts.feedbackTitle'),
+      t('settingsScreen.alerts.feedbackMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Report a Bug',
+          text: t('settingsScreen.alerts.reportBug'),
           onPress: () => {
             Alert.alert(
-              'Bug Report',
-              'Please describe the issue you encountered and the steps to reproduce it. We\'ll work on fixing it in the next update.',
-              [{ text: 'OK' }]
+              t('settingsScreen.alerts.bugReportTitle'),
+              t('settingsScreen.alerts.bugReportMessage'),
+              [{ text: t('common.ok') }]
             );
           },
         },
         {
-          text: 'Suggest Feature',
+          text: t('settingsScreen.alerts.suggestFeature'),
           onPress: () => {
             Alert.alert(
-              'Feature Request',
-              'We\'d love to hear your ideas! Feature requests are reviewed for future updates.',
-              [{ text: 'OK' }]
+              t('settingsScreen.alerts.featureRequestTitle'),
+              t('settingsScreen.alerts.featureRequestMessage'),
+              [{ text: t('common.ok') }]
             );
           },
         },
@@ -339,38 +364,25 @@ export function SettingsScreen() {
 
   const handleRateApp = () => {
     Alert.alert(
-      'Rate HomeTrack',
-      'Thank you for your interest in rating HomeTrack!\n\n' +
-      'This app is currently in development. Once it\'s published to the App Store and Play Store, you\'ll be able to rate it there.',
-      [{ text: 'OK', style: 'default' }]
+      t('settingsScreen.alerts.rateTitle'),
+      t('settingsScreen.alerts.rateMessage'),
+      [{ text: t('common.ok'), style: 'default' }]
     );
   };
 
   const handlePrivacyPolicy = () => {
     Alert.alert(
-      'Privacy Policy',
-      'HomeTrack Privacy Policy\n\n' +
-      '• All your data is stored locally on your device\n' +
-      '• We do not collect or transmit any personal information\n' +
-      '• Backups are encrypted when you enable encryption\n' +
-      '• Photos and documents stay on your device\n' +
-      '• No analytics or tracking is used\n\n' +
-      'Your privacy is our priority.',
-      [{ text: 'OK' }]
+      t('settingsScreen.alerts.privacyTitle'),
+      t('settingsScreen.alerts.privacyMessage'),
+      [{ text: t('common.ok') }]
     );
   };
 
   const handleTermsOfService = () => {
     Alert.alert(
-      'Terms of Service',
-      'HomeTrack Terms of Service\n\n' +
-      '• This app is provided "as-is" without warranties\n' +
-      '• You are responsible for backing up your data\n' +
-      '• Use of this app is at your own risk\n' +
-      '• We are not liable for any data loss\n' +
-      '• You retain ownership of all your content\n\n' +
-      'By using this app, you agree to these terms.',
-      [{ text: 'I Agree' }]
+      t('settingsScreen.alerts.termsTitle'),
+      t('settingsScreen.alerts.termsMessage'),
+      [{ text: t('settingsScreen.alerts.iAgree') }]
     );
   };
 
@@ -378,8 +390,8 @@ export function SettingsScreen() {
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`} style={{ paddingTop: insets.top }}>
       {/* Header */}
       <View className={`px-5 pt-4 pb-5 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} border-b`}>
-        <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Settings</Text>
-        <Text className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Customize your experience</Text>
+        <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.title')}</Text>
+        <Text className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('settingsScreen.subtitle')}</Text>
       </View>
 
       <ScrollView
@@ -390,12 +402,24 @@ export function SettingsScreen() {
         {/* Preferences Section */}
         <View className="mt-6">
           <Text className={`px-5 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Preferences
+            {t('settingsScreen.preferences')}
           </Text>
           <View className={isDark ? 'bg-slate-800' : 'bg-white'} style={SHADOWS.sm}>
             <ListItem
-              title="Theme"
-              subtitle={THEME_LABELS[themeMode]}
+              title={t('settings.language')}
+              subtitle={SUPPORTED_LANGUAGES[language].nativeName}
+              leftIcon={
+                <View className="w-9 h-9 rounded-xl bg-emerald-100 items-center justify-center">
+                  <Globe size={18} color="#059669" />
+                </View>
+              }
+              showChevron
+              onPress={() => setShowLanguagePicker(true)}
+            />
+            <Divider className="ml-[68px]" />
+            <ListItem
+              title={t('settingsScreen.theme')}
+              subtitle={getThemeLabel(themeMode)}
               leftIcon={
                 <View className={`w-9 h-9 rounded-xl items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                   {getThemeIcon()}
@@ -406,7 +430,7 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Currency"
+              title={t('settings.currency')}
               subtitle={getCurrencyLabel(settings?.currency || 'USD')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-green-100 items-center justify-center">
@@ -418,7 +442,7 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Date Format"
+              title={t('settingsScreen.dateFormat')}
               subtitle={getDateFormatLabel(settings?.dateFormat || 'MM/dd/yyyy')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-blue-100 items-center justify-center">
@@ -430,7 +454,7 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Photo Quality"
+              title={t('settingsScreen.photoQuality')}
               subtitle={getPhotoQualitySubtitle()}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-purple-100 items-center justify-center">
@@ -446,12 +470,12 @@ export function SettingsScreen() {
         {/* Data & Backup Section */}
         <View className="mt-6">
           <Text className={`px-5 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Data & Backup
+            {t('settingsScreen.dataBackup')}
           </Text>
           <View className={isDark ? 'bg-slate-800' : 'bg-white'} style={SHADOWS.sm}>
             <ListItem
-              title="Export Data"
-              subtitle="Create a backup ZIP file"
+              title={t('settingsScreen.exportData')}
+              subtitle={t('settingsScreen.exportSubtitle')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-cyan-100 items-center justify-center">
                   <Download size={18} color="#0891b2" />
@@ -462,8 +486,8 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Import Data"
-              subtitle="Restore from backup"
+              title={t('settingsScreen.importData')}
+              subtitle={t('settingsScreen.importSubtitle')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-amber-100 items-center justify-center">
                   <Upload size={18} color="#d97706" />
@@ -478,15 +502,15 @@ export function SettingsScreen() {
         {/* Security Section */}
         <View className="mt-6">
           <Text className={`px-5 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Security
+            {t('settingsScreen.security')}
           </Text>
           <View className={isDark ? 'bg-slate-800' : 'bg-white'} style={SHADOWS.sm}>
             <ListItem
-              title="App Lock"
+              title={t('settingsScreen.appLock')}
               subtitle={
                 biometricAvailable
-                  ? `Require ${authService.getBiometricLabel(biometricType)}`
-                  : 'Biometric not available'
+                  ? t('settingsScreen.requireBiometric', { type: authService.getBiometricLabel(biometricType) })
+                  : t('settingsScreen.biometricNotAvailable')
               }
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-indigo-100 items-center justify-center">
@@ -506,8 +530,8 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Encrypt Exports"
-              subtitle={settings?.encryptExports ? "Backups will be password-protected" : "Password-protect backup files"}
+              title={t('settingsScreen.encryptExports')}
+              subtitle={settings?.encryptExports ? t('settingsScreen.encryptOnSubtitle') : t('settingsScreen.encryptOffSubtitle')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-teal-100 items-center justify-center">
                   <Shield size={18} color="#14b8a6" />
@@ -529,11 +553,11 @@ export function SettingsScreen() {
         {/* Support Section */}
         <View className="mt-6">
           <Text className={`px-5 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Support
+            {t('settingsScreen.support')}
           </Text>
           <View className={isDark ? 'bg-slate-800' : 'bg-white'} style={SHADOWS.sm}>
             <ListItem
-              title="Help & Support"
+              title={t('settingsScreen.helpSupport')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-blue-100 items-center justify-center">
                   <HelpCircle size={18} color={COLORS.info} />
@@ -544,7 +568,7 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Send Feedback"
+              title={t('settingsScreen.sendFeedback')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-pink-100 items-center justify-center">
                   <MessageCircle size={18} color="#ec4899" />
@@ -555,7 +579,7 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Rate the App"
+              title={t('settingsScreen.rateApp')}
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-amber-100 items-center justify-center">
                   <Star size={18} color="#f59e0b" />
@@ -570,11 +594,11 @@ export function SettingsScreen() {
         {/* Legal Section */}
         <View className="mt-6">
           <Text className={`px-5 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Legal
+            {t('settingsScreen.legal')}
           </Text>
           <View className={isDark ? 'bg-slate-800' : 'bg-white'} style={SHADOWS.sm}>
             <ListItem
-              title="Privacy Policy"
+              title={t('settingsScreen.privacyPolicy')}
               leftIcon={
                 <View className={`w-9 h-9 rounded-xl items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                   <FileText size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
@@ -585,7 +609,7 @@ export function SettingsScreen() {
             />
             <Divider className="ml-[68px]" />
             <ListItem
-              title="Terms of Service"
+              title={t('settingsScreen.termsOfService')}
               leftIcon={
                 <View className={`w-9 h-9 rounded-xl items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                   <FileText size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
@@ -600,12 +624,12 @@ export function SettingsScreen() {
         {/* Danger Zone */}
         <View className="mt-6">
           <Text className={`px-5 text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Danger Zone
+            {t('settingsScreen.dangerZone')}
           </Text>
           <View className={isDark ? 'bg-slate-800' : 'bg-white'} style={SHADOWS.sm}>
             <ListItem
-              title="Clear All Data"
-              subtitle="Delete everything permanently"
+              title={t('settingsScreen.clearAllData')}
+              subtitle={t('settingsScreen.clearDataSubtitle')}
               danger
               leftIcon={
                 <View className="w-9 h-9 rounded-xl bg-red-100 items-center justify-center">
@@ -623,11 +647,11 @@ export function SettingsScreen() {
           <View className="flex-row items-center mb-2">
             <Shield size={18} color={COLORS.primary[600]} />
             <Text className={`text-sm font-bold ml-2 ${isDark ? 'text-primary-300' : 'text-primary-800'}`}>
-              Your data stays on your device
+              {t('settingsScreen.privacyNotice.title')}
             </Text>
           </View>
           <Text className={`text-sm leading-5 ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>
-            All your information is stored locally on your device. No account required, no cloud sync, no tracking. Your privacy is our priority.
+            {t('settingsScreen.privacyNotice.description')}
           </Text>
         </View>
 
@@ -638,16 +662,28 @@ export function SettingsScreen() {
           </View>
           <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>HomeTrack</Text>
           <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Version 1.0.0</Text>
-          <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>The Carfax for Your Home</Text>
+          <Text className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('settingsScreen.appInfo.tagline')}</Text>
         </View>
       </ScrollView>
+
+      {/* Language Picker Dialog */}
+      <SelectDialog
+        visible={showLanguagePicker}
+        title={language === 'tr' ? 'Dil Seçin' : 'Choose Language'}
+        message={language === 'tr' ? 'Tercih ettiğiniz dili seçin' : 'Select your preferred language'}
+        options={languageOptions}
+        cancelText={t('common.cancel')}
+        onCancel={() => setShowLanguagePicker(false)}
+        onSelect={handleLanguageSelect}
+      />
 
       {/* Theme Picker Dialog */}
       <SelectDialog
         visible={showThemePicker}
-        title="Choose Theme"
-        message="Select your preferred appearance"
+        title={language === 'tr' ? 'Tema Seçin' : 'Choose Theme'}
+        message={language === 'tr' ? 'Tercih ettiğiniz görünümü seçin' : 'Select your preferred appearance'}
         options={THEME_OPTIONS}
+        cancelText={t('common.cancel')}
         onCancel={() => setShowThemePicker(false)}
         onSelect={handleThemeSelect}
       />
@@ -655,9 +691,10 @@ export function SettingsScreen() {
       {/* Currency Picker Dialog */}
       <SelectDialog
         visible={showCurrencyPicker}
-        title="Choose Currency"
-        message="Select your preferred currency for displaying amounts"
+        title={t('settingsScreen.dialogs.chooseCurrency')}
+        message={t('settingsScreen.dialogs.currencyMessage')}
         options={CURRENCY_OPTIONS}
+        cancelText={t('common.cancel')}
         onCancel={() => setShowCurrencyPicker(false)}
         onSelect={handleCurrencySelect}
       />
@@ -665,12 +702,13 @@ export function SettingsScreen() {
       {/* Date Format Picker Dialog */}
       <SelectDialog
         visible={showDateFormatPicker}
-        title="Choose Date Format"
-        message="Select how dates should be displayed"
+        title={t('settingsScreen.dialogs.chooseDateFormat')}
+        message={t('settingsScreen.dialogs.dateFormatMessage')}
         options={DATE_FORMAT_OPTIONS.map(opt => ({
-          label: `${opt.label} (${opt.example})`,
+          label: `${opt.label} (${language === 'tr' ? opt.example.replace('Dec', 'Ara') : opt.example})`,
           value: opt.value,
         }))}
+        cancelText={t('common.cancel')}
         onCancel={() => setShowDateFormatPicker(false)}
         onSelect={handleDateFormatSelect}
       />
@@ -678,12 +716,15 @@ export function SettingsScreen() {
       {/* Photo Quality Picker Dialog */}
       <SelectDialog
         visible={showPhotoQualityPicker}
-        title="Choose Photo Quality"
-        message="Higher quality uses more storage"
+        title={t('settingsScreen.dialogs.choosePhotoQuality')}
+        message={t('settingsScreen.dialogs.photoQualityMessage')}
         options={PHOTO_QUALITY_OPTIONS.map(opt => ({
-          label: `${opt.label} - ${opt.description}`,
+          label: language === 'tr'
+            ? `${t(`settingsScreen.photoQualityOptions.${opt.value}`)} - ${t(`settingsScreen.photoQualityOptions.${opt.value}Desc`)}`
+            : `${opt.label} - ${opt.description}`,
           value: opt.value,
         }))}
+        cancelText={t('common.cancel')}
         onCancel={() => setShowPhotoQualityPicker(false)}
         onSelect={handlePhotoQualitySelect}
       />
@@ -691,14 +732,14 @@ export function SettingsScreen() {
       {/* Export Password Dialog */}
       <PasswordDialog
         visible={showExportPasswordDialog}
-        title="Encrypt Backup"
-        message="Set a password to protect your backup. You'll need this password to restore from this backup."
-        placeholder="Enter password"
-        confirmPlaceholder="Confirm password"
+        title={t('settingsScreen.dialogs.encryptBackup')}
+        message={t('settingsScreen.dialogs.encryptMessage')}
+        placeholder={t('settingsScreen.dialogs.enterPassword')}
+        confirmPlaceholder={t('settingsScreen.dialogs.confirmPassword')}
         requireConfirmation={true}
         minLength={4}
-        cancelText="Cancel"
-        confirmText="Create Backup"
+        cancelText={t('common.cancel')}
+        confirmText={t('settingsScreen.dialogs.createBackup')}
         onCancel={() => setShowExportPasswordDialog(false)}
         onConfirm={handleExportPasswordConfirm}
       />
@@ -706,13 +747,13 @@ export function SettingsScreen() {
       {/* Import Password Dialog */}
       <PasswordDialog
         visible={showImportPasswordDialog}
-        title="Encrypted Backup"
-        message="This backup is password-protected. Enter the password to restore your data."
-        placeholder="Enter password"
+        title={t('settingsScreen.dialogs.encryptedBackup')}
+        message={t('settingsScreen.dialogs.encryptedBackupMessage')}
+        placeholder={t('settingsScreen.dialogs.enterPassword')}
         requireConfirmation={false}
         minLength={1}
-        cancelText="Cancel"
-        confirmText="Restore"
+        cancelText={t('common.cancel')}
+        confirmText={t('settingsScreen.dialogs.restore')}
         onCancel={() => setShowImportPasswordDialog(false)}
         onConfirm={handleImportPasswordConfirm}
       />

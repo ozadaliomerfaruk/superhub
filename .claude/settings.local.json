@@ -25,7 +25,9 @@
       "Bash(find:*)",
       "Bash(dir /s C:Usersozadaev-takip-v3src)",
       "Bash(dir \"C:\\Users\\ozada\\apps\\ev-takip-v3\\src\\services\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npx expo-doctor:*)",
+      "Bash(copy:*)"
     ]
   }
 }

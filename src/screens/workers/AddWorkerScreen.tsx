@@ -27,7 +27,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { workerRepository } from '../../services/database';
 import { Button, Input, IconButton, TextArea } from '../../components/ui';
 import { COLORS, WORKER_SPECIALTIES, SHADOWS } from '../../constants/theme';
-import { useToast, useTheme } from '../../contexts';
+import { useToast, useTheme, useTranslation } from '../../contexts';
 import { validateEmail, validatePhone } from '../../utils/validation';
 import { getImageQuality } from '../../utils/image';
 
@@ -38,6 +38,7 @@ export function AddWorkerScreen() {
   const insets = useSafeAreaInsets();
   const { showSuccess, showError } = useToast();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -52,7 +53,7 @@ export function AddWorkerScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('property.alerts.photoLibraryPermission'));
       return;
     }
 
@@ -72,7 +73,7 @@ export function AddWorkerScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant camera access');
+      Alert.alert(t('common.permissionRequired'), t('property.alerts.cameraPermission'));
       return;
     }
 
@@ -102,12 +103,12 @@ export function AddWorkerScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a name');
+      Alert.alert(t('common.required'), t('worker.alerts.nameRequired'));
       return;
     }
 
     if (selectedSpecialties.length === 0) {
-      Alert.alert('Required', 'Please select at least one specialty');
+      Alert.alert(t('common.required'), t('worker.alerts.specialtyRequired'));
       return;
     }
 
@@ -115,7 +116,7 @@ export function AddWorkerScreen() {
     if (email.trim()) {
       const emailValidation = validateEmail(email);
       if (!emailValidation.isValid) {
-        Alert.alert('Invalid Email', emailValidation.error);
+        Alert.alert(t('worker.alerts.invalidEmail'), emailValidation.error);
         return;
       }
     }
@@ -124,7 +125,7 @@ export function AddWorkerScreen() {
     if (phone.trim()) {
       const phoneValidation = validatePhone(phone);
       if (!phoneValidation.isValid) {
-        Alert.alert('Invalid Phone', phoneValidation.error);
+        Alert.alert(t('worker.alerts.invalidPhone'), phoneValidation.error);
         return;
       }
     }
@@ -143,11 +144,11 @@ export function AddWorkerScreen() {
         imageUri,
       });
 
-      showSuccess('Worker added successfully');
+      showSuccess(t('worker.createSuccess'));
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create worker:', error);
-      showError('Failed to create worker. Please try again.');
+      showError(t('worker.createError'));
     } finally {
       setLoading(false);
     }
@@ -162,9 +163,9 @@ export function AddWorkerScreen() {
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Add Worker</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('worker.add')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -207,15 +208,15 @@ export function AddWorkerScreen() {
               activeOpacity={0.7}
             >
               <Text className="text-sm font-medium text-primary-600">
-                {imageUri ? 'Change Photo' : 'Add Photo'}
+                {imageUri ? t('worker.changePhoto') : t('worker.addPhoto')}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Name */}
           <Input
-            label="Name"
-            placeholder="Full name"
+            label={t('worker.name')}
+            placeholder={t('worker.namePlaceholder')}
             value={name}
             onChangeText={setName}
             containerClassName="mb-4"
@@ -225,13 +226,13 @@ export function AddWorkerScreen() {
           {/* Contact Info */}
           <View className={`rounded-2xl p-4 mb-4 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
             <Text className={`text-sm font-semibold mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Contact Information
+              {t('worker.contactInfo')}
             </Text>
 
             <View className={`flex-row items-center rounded-xl px-4 py-3 border mb-3 ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
               <Phone size={18} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Input
-                placeholder="Phone number"
+                placeholder={t('worker.phonePlaceholder')}
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -243,7 +244,7 @@ export function AddWorkerScreen() {
             <View className={`flex-row items-center rounded-xl px-4 py-3 border mb-3 ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
               <Mail size={18} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Input
-                placeholder="Email address"
+                placeholder={t('worker.emailPlaceholder')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -256,7 +257,7 @@ export function AddWorkerScreen() {
             <View className={`flex-row items-center rounded-xl px-4 py-3 border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
               <Building2 size={18} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Input
-                placeholder="Company name (optional)"
+                placeholder={t('worker.companyPlaceholder')}
                 value={company}
                 onChangeText={setCompany}
                 containerClassName="flex-1 ml-3"
@@ -268,11 +269,13 @@ export function AddWorkerScreen() {
           {/* Specialties */}
           <View className="mb-4">
             <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Specialties <Text className="text-red-500">*</Text>
+              {t('worker.specialty')} <Text className="text-red-500">*</Text>
             </Text>
             <View className="flex-row flex-wrap">
               {WORKER_SPECIALTIES.map((specialty) => {
                 const isSelected = selectedSpecialties.includes(specialty);
+                // Get translated specialty name
+                const translatedSpecialty = t(`worker.specialties.${specialty}`) || specialty;
                 return (
                   <TouchableOpacity
                     key={specialty}
@@ -288,7 +291,7 @@ export function AddWorkerScreen() {
                           isSelected ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                         }`}
                       >
-                        {specialty}
+                        {translatedSpecialty}
                       </Text>
                       {isSelected && (
                         <Check size={14} color={COLORS.primary[600]} className="ml-1.5" />
@@ -303,7 +306,7 @@ export function AddWorkerScreen() {
           {/* Rating */}
           <View className="mb-4">
             <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Rating (Optional)
+              {t('worker.ratingOptional')}
             </Text>
             <View className="flex-row gap-2">
               {[1, 2, 3, 4, 5].map((value) => (
@@ -335,8 +338,8 @@ export function AddWorkerScreen() {
 
           {/* Notes */}
           <TextArea
-            label="Notes"
-            placeholder="Add any additional notes about this worker..."
+            label={t('worker.notes')}
+            placeholder={t('worker.notesPlaceholder')}
             value={notes}
             onChangeText={setNotes}
             rows={3}

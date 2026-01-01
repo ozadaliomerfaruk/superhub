@@ -38,7 +38,7 @@ import { notificationService } from '../../services/notifications';
 import { ScreenHeader, Card, Button, Badge, Input } from '../../components/ui';
 import { COLORS, MAINTENANCE_TEMPLATES } from '../../constants/theme';
 import { formatDate, formatRelative, getCurrentISODate } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type MaintenanceRouteProp = RouteProp<RootStackParamList, 'Maintenance'>;
@@ -57,20 +57,11 @@ function getTaskStatus(task: MaintenanceTaskWithWorker): TaskStatus {
   return 'upcoming';
 }
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bgColor: string }> = {
-  overdue: { label: 'Overdue', color: COLORS.error, bgColor: '#fef2f2' },
-  due_soon: { label: 'Due Soon', color: COLORS.warning, bgColor: '#fffbeb' },
-  upcoming: { label: 'Upcoming', color: COLORS.info, bgColor: '#eff6ff' },
-  completed: { label: 'Completed', color: COLORS.success, bgColor: '#f0fdf4' },
-};
-
-const FREQUENCY_LABELS: Record<string, string> = {
-  once: 'One-time',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  quarterly: 'Quarterly',
-  biannual: 'Every 6 months',
-  yearly: 'Yearly',
+const STATUS_CONFIG: Record<TaskStatus, { color: string; bgColor: string }> = {
+  overdue: { color: COLORS.error, bgColor: '#fef2f2' },
+  due_soon: { color: COLORS.warning, bgColor: '#fffbeb' },
+  upcoming: { color: COLORS.info, bgColor: '#eff6ff' },
+  completed: { color: COLORS.success, bgColor: '#f0fdf4' },
 };
 
 export function MaintenanceScreen() {
@@ -78,6 +69,30 @@ export function MaintenanceScreen() {
   const route = useRoute<MaintenanceRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
+  // Helper functions for translations
+  const getStatusLabel = (status: TaskStatus): string => {
+    const statusMap: Record<TaskStatus, string> = {
+      overdue: t('maintenance.status.overdue'),
+      due_soon: t('maintenance.status.dueSoon'),
+      upcoming: t('maintenance.status.upcoming'),
+      completed: t('maintenance.status.completed'),
+    };
+    return statusMap[status];
+  };
+
+  const getFrequencyLabel = (frequency: string): string => {
+    const frequencyMap: Record<string, string> = {
+      once: t('maintenance.frequency_options.once'),
+      weekly: t('maintenance.frequency_options.weekly'),
+      monthly: t('maintenance.frequency_options.monthly'),
+      quarterly: t('maintenance.frequency_options.quarterly'),
+      biannual: t('maintenance.frequency_options.biannual'),
+      yearly: t('maintenance.frequency_options.yearly'),
+    };
+    return frequencyMap[frequency] || frequency;
+  };
 
   const [property, setProperty] = useState<Property | null>(null);
   const [tasks, setTasks] = useState<MaintenanceTaskWithWorker[]>([]);
@@ -178,7 +193,7 @@ export function MaintenanceScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Failed to complete task:', error);
-      Alert.alert('Error', 'Failed to complete task');
+      Alert.alert(t('common.error'), t('common.errorMessage'));
     }
   };
 
@@ -190,18 +205,18 @@ export function MaintenanceScreen() {
       setShowHistoryModal(true);
     } catch (error) {
       console.error('Failed to load task history:', error);
-      Alert.alert('Error', 'Failed to load task history');
+      Alert.alert(t('common.error'), t('common.errorMessage'));
     }
   };
 
   const handleDeleteTask = (task: MaintenanceTaskWithWorker) => {
     Alert.alert(
-      'Delete Task',
-      `Are you sure you want to delete "${task.title}"? This will also delete all completion history.`,
+      t('maintenance.delete'),
+      `${t('maintenance.deleteConfirm')} "${task.title}"? ${t('maintenance.deleteWarning')}`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -209,7 +224,7 @@ export function MaintenanceScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete task:', error);
-              Alert.alert('Error', 'Failed to delete task');
+              Alert.alert(t('common.error'), t('common.errorMessage'));
             }
           },
         },
@@ -217,9 +232,13 @@ export function MaintenanceScreen() {
     );
   };
 
+  const getTemplateTitle = (key: string): string => {
+    return t(`maintenance.templates.${key}`);
+  };
+
   const handleAddTemplate = (template: typeof MAINTENANCE_TEMPLATES[number]) => {
     setEditingTask(null);
-    setTaskTitle(template.title);
+    setTaskTitle(getTemplateTitle(template.key));
     const freq = template.frequency as MaintenanceTaskWithWorker['frequency'];
     setTaskFrequency(freq);
     setTaskReminderDays(template.reminderDaysBefore);
@@ -282,7 +301,7 @@ export function MaintenanceScreen() {
 
   const handleSaveTask = async () => {
     if (!taskTitle.trim()) {
-      Alert.alert('Error', 'Please enter a task name');
+      Alert.alert(t('common.error'), t('maintenance.taskNameRequired'));
       return;
     }
 
@@ -312,7 +331,7 @@ export function MaintenanceScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Failed to save task:', error);
-      Alert.alert('Error', `Failed to ${isEditing ? 'update' : 'create'} task`);
+      Alert.alert(t('common.error'), t('common.errorMessage'));
     }
   };
 
@@ -320,28 +339,28 @@ export function MaintenanceScreen() {
     const now = new Date();
     const dueDate = new Date(task.nextDueDate);
     const days = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (days < 0) return `${Math.abs(days)} day${Math.abs(days) !== 1 ? 's' : ''} overdue`;
-    if (days === 0) return 'Due today';
-    if (days === 1) return 'Due tomorrow';
-    return `Due in ${days} days`;
+    if (days < 0) return t('maintenance.dueText.overdue', { days: Math.abs(days) });
+    if (days === 0) return t('maintenance.dueText.today');
+    if (days === 1) return t('maintenance.dueText.tomorrow');
+    return t('maintenance.dueText.inDays', { days });
   };
 
   const frequencyOptions: { label: string; value: MaintenanceTaskWithWorker['frequency']; description: string }[] = [
-    { label: 'One-time', value: 'once', description: 'Task happens once on the selected date' },
-    { label: 'Weekly', value: 'weekly', description: 'Repeats every 7 days' },
-    { label: 'Monthly', value: 'monthly', description: 'Repeats every month' },
-    { label: 'Quarterly', value: 'quarterly', description: 'Repeats every 3 months' },
-    { label: 'Every 6 Months', value: 'biannual', description: 'Repeats twice a year' },
-    { label: 'Yearly', value: 'yearly', description: 'Repeats once a year' },
+    { label: t('maintenance.frequency_options.once'), value: 'once', description: t('maintenance.frequency_descriptions.once') },
+    { label: t('maintenance.frequency_options.weekly'), value: 'weekly', description: t('maintenance.frequency_descriptions.weekly') },
+    { label: t('maintenance.frequency_options.monthly'), value: 'monthly', description: t('maintenance.frequency_descriptions.monthly') },
+    { label: t('maintenance.frequency_options.quarterly'), value: 'quarterly', description: t('maintenance.frequency_descriptions.quarterly') },
+    { label: t('maintenance.frequency_options.biannual'), value: 'biannual', description: t('maintenance.frequency_descriptions.biannual') },
+    { label: t('maintenance.frequency_options.yearly'), value: 'yearly', description: t('maintenance.frequency_descriptions.yearly') },
   ];
 
   const reminderOptions = [
-    { label: 'Same day', value: 0 },
-    { label: '1 day before', value: 1 },
-    { label: '3 days before', value: 3 },
-    { label: '1 week before', value: 7 },
-    { label: '2 weeks before', value: 14 },
-    { label: '1 month before', value: 30 },
+    { label: t('maintenance.reminderOptions.sameDay'), value: 0 },
+    { label: t('maintenance.reminderOptions.oneDayBefore'), value: 1 },
+    { label: t('maintenance.reminderOptions.threeDaysBefore'), value: 3 },
+    { label: t('maintenance.reminderOptions.oneWeekBefore'), value: 7 },
+    { label: t('maintenance.reminderOptions.twoWeeksBefore'), value: 14 },
+    { label: t('maintenance.reminderOptions.oneMonthBefore'), value: 30 },
   ];
 
   const groupedTasks = tasks.reduce((acc, task) => {
@@ -364,7 +383,7 @@ export function MaintenanceScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Tasks"
+        title={t('maintenance.tasks')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -394,7 +413,7 @@ export function MaintenanceScreen() {
                 <AlertTriangle size={20} color={COLORS.error} />
               </View>
               <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{overdueCount}</Text>
-              <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Overdue</Text>
+              <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.status.overdue')}</Text>
             </View>
           </Card>
           <Card variant="default" padding="md" className="flex-1">
@@ -403,7 +422,7 @@ export function MaintenanceScreen() {
                 <Clock size={20} color={COLORS.warning} />
               </View>
               <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dueSoonCount}</Text>
-              <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Due Soon</Text>
+              <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.status.dueSoon')}</Text>
             </View>
           </Card>
           <Card variant="default" padding="md" className="flex-1">
@@ -412,7 +431,7 @@ export function MaintenanceScreen() {
                 <CheckCircle2 size={20} color={COLORS.success} />
               </View>
               <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{completedCount}</Text>
-              <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Completed</Text>
+              <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.status.completed')}</Text>
             </View>
           </Card>
         </View>
@@ -421,7 +440,7 @@ export function MaintenanceScreen() {
         {showTemplates && (
           <View className="px-5 mt-4">
             <Card variant="filled" padding="md" className={`border ${isDark ? 'bg-primary-900/30 border-primary-800' : 'bg-primary-50 border-primary-100'}`}>
-              <Text className={`text-sm font-semibold mb-3 ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>Add from Templates</Text>
+              <Text className={`text-sm font-semibold mb-3 ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>{t('maintenance.templates.title')}</Text>
               <View className="gap-2">
                 {MAINTENANCE_TEMPLATES.map((template, index) => (
                   <TouchableOpacity
@@ -431,8 +450,8 @@ export function MaintenanceScreen() {
                     activeOpacity={0.7}
                   >
                     <View className="flex-1">
-                      <Text className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{template.title}</Text>
-                      <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{FREQUENCY_LABELS[template.frequency]}</Text>
+                      <Text className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{getTemplateTitle(template.key)}</Text>
+                      <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{getFrequencyLabel(template.frequency)}</Text>
                     </View>
                     <Plus size={18} color={COLORS.primary[isDark ? 400 : 600]} />
                   </TouchableOpacity>
@@ -444,7 +463,7 @@ export function MaintenanceScreen() {
                 activeOpacity={0.7}
               >
                 <Plus size={16} color={COLORS.primary[isDark ? 400 : 600]} />
-                <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-primary-400' : 'text-primary-600'}`}>Custom Task</Text>
+                <Text className={`text-sm font-medium ml-1.5 ${isDark ? 'text-primary-400' : 'text-primary-600'}`}>{t('maintenance.templates.custom')}</Text>
               </TouchableOpacity>
             </Card>
           </View>
@@ -458,12 +477,12 @@ export function MaintenanceScreen() {
                 <View className="w-16 h-16 rounded-2xl bg-slate-200 items-center justify-center mb-4">
                   <Settings size={32} color={COLORS.slate[400]} />
                 </View>
-                <Text className="text-lg font-semibold text-slate-700 text-center">No tasks yet</Text>
+                <Text className="text-lg font-semibold text-slate-700 text-center">{t('maintenance.noTasks')}</Text>
                 <Text className="text-sm text-slate-500 text-center mt-2 px-4">
-                  Add tasks to stay on top of home maintenance
+                  {t('maintenance.noTasksDesc')}
                 </Text>
                 <Button
-                  title="Add Task"
+                  title={t('maintenance.add')}
                   onPress={() => setShowTemplates(true)}
                   variant="primary"
                   className="mt-4"
@@ -484,7 +503,7 @@ export function MaintenanceScreen() {
                   <View className="flex-row items-center mb-2">
                     <View className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: config.color }} />
                     <Text className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
-                      {config.label} ({statusTasks.length})
+                      {getStatusLabel(status)} ({statusTasks.length})
                     </Text>
                   </View>
 
@@ -526,7 +545,7 @@ export function MaintenanceScreen() {
 
                                 {/* Worker & Status Info */}
                                 <View className="flex-row flex-wrap items-center gap-2 mt-2">
-                                  <Badge label={FREQUENCY_LABELS[task.frequency]} variant="default" size="sm" />
+                                  <Badge label={getFrequencyLabel(task.frequency)} variant="default" size="sm" />
 
                                   {task.isCompleted ? (
                                     <View className="flex-row items-center bg-green-50 px-2 py-1 rounded-lg">
@@ -553,7 +572,7 @@ export function MaintenanceScreen() {
                                   <View className="flex-row items-center mt-2">
                                     <User size={11} color={COLORS.slate[400]} />
                                     <Text className="text-xs text-slate-400 ml-1">
-                                      Last done by {task.lastCompletionWorkerName}
+                                      {t('maintenance.lastDoneBy')} {task.lastCompletionWorkerName}
                                     </Text>
                                   </View>
                                 )}
@@ -563,7 +582,7 @@ export function MaintenanceScreen() {
                                   <View className="flex-row items-center mt-1">
                                     <User size={11} color={COLORS.primary[400]} />
                                     <Text className="text-xs text-primary-500 ml-1">
-                                      Assigned to {task.assignedWorkerName}
+                                      {t('maintenance.assignedTo')} {task.assignedWorkerName}
                                     </Text>
                                   </View>
                                 )}
@@ -592,7 +611,7 @@ export function MaintenanceScreen() {
                                     >
                                       <CheckCircle2 size={16} color={statusConfig.color} />
                                       <Text className="text-sm font-semibold ml-1.5" style={{ color: statusConfig.color }}>
-                                        Complete
+                                        {t('maintenance.complete')}
                                       </Text>
                                     </TouchableOpacity>
                                   )}
@@ -603,7 +622,7 @@ export function MaintenanceScreen() {
                                     activeOpacity={0.7}
                                   >
                                     <History size={16} color={COLORS.slate[600]} />
-                                    <Text className="text-sm font-semibold ml-1.5 text-slate-600">History</Text>
+                                    <Text className="text-sm font-semibold ml-1.5 text-slate-600">{t('maintenance.history')}</Text>
                                   </TouchableOpacity>
                                 </View>
 
@@ -614,7 +633,7 @@ export function MaintenanceScreen() {
                                     activeOpacity={0.7}
                                   >
                                     <Edit3 size={16} color={COLORS.slate[600]} />
-                                    <Text className="text-sm font-semibold ml-1.5 text-slate-600">Edit</Text>
+                                    <Text className="text-sm font-semibold ml-1.5 text-slate-600">{t('maintenance.edit')}</Text>
                                   </TouchableOpacity>
 
                                   <TouchableOpacity
@@ -623,7 +642,7 @@ export function MaintenanceScreen() {
                                     activeOpacity={0.7}
                                   >
                                     <Trash2 size={16} color={COLORS.error} />
-                                    <Text className="text-sm font-semibold ml-1.5 text-red-600">Delete</Text>
+                                    <Text className="text-sm font-semibold ml-1.5 text-red-600">{t('common.delete')}</Text>
                                   </TouchableOpacity>
                                 </View>
                               </View>
@@ -650,8 +669,8 @@ export function MaintenanceScreen() {
           resetTaskForm();
         }}
       >
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+        <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
             <TouchableOpacity
               onPress={() => {
                 setShowTaskModal(false);
@@ -659,32 +678,32 @@ export function MaintenanceScreen() {
               }}
               className="p-2"
             >
-              <X size={22} color={COLORS.slate[600]} />
+              <X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-slate-900">{isEditing ? 'Edit Task' : 'Add Task'}</Text>
-            <Button title="Save" variant="primary" size="sm" onPress={handleSaveTask} />
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{isEditing ? t('maintenance.edit') : t('maintenance.add')}</Text>
+            <Button title={t('common.save')} variant="primary" size="sm" onPress={handleSaveTask} />
           </View>
 
           <ScrollView className="flex-1 px-5 py-4" showsVerticalScrollIndicator={false}>
             {/* Task Name */}
             <View className="mb-5">
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Task Name *</Text>
-              <Input placeholder="Enter task name" value={taskTitle} onChangeText={setTaskTitle} />
+              <Text className={`text-sm font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.taskName')} *</Text>
+              <Input placeholder={t('maintenance.taskNamePlaceholder')} value={taskTitle} onChangeText={setTaskTitle} />
             </View>
 
             {/* Due Date */}
             <View className="mb-5">
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Due Date *</Text>
+              <Text className={`text-sm font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.dueDate')} *</Text>
               <TouchableOpacity
                 onPress={() => {
                   setTempTaskDueDate(taskDueDate);
                   setShowDatePicker(true);
                 }}
                 activeOpacity={0.7}
-                className="bg-white rounded-xl px-4 py-3.5 border border-slate-200 flex-row items-center"
+                className={`rounded-xl px-4 py-3.5 border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
               >
                 <Calendar size={18} color={COLORS.primary[500]} />
-                <Text className="text-base text-slate-700 ml-3 flex-1">
+                <Text className={`text-base ml-3 flex-1 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                   {formatDate(taskDueDate.toISOString(), 'EEEE, MMMM d, yyyy')}
                 </Text>
               </TouchableOpacity>
@@ -692,22 +711,22 @@ export function MaintenanceScreen() {
 
             {/* Assigned Worker */}
             <View className="mb-5">
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Assign to Worker</Text>
+              <Text className={`text-sm font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.assignTo')}</Text>
               <TouchableOpacity
                 onPress={() => setShowWorkerPicker(true)}
                 activeOpacity={0.7}
-                className="bg-white rounded-xl px-4 py-3.5 border border-slate-200 flex-row items-center"
+                className={`rounded-xl px-4 py-3.5 border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
               >
                 <User size={18} color={COLORS.slate[400]} />
-                <Text className={`text-base ml-3 flex-1 ${taskAssignedWorkerId ? 'text-slate-700' : 'text-slate-400'}`}>
-                  {getWorkerName(taskAssignedWorkerId) || 'Select worker (optional)'}
+                <Text className={`text-base ml-3 flex-1 ${taskAssignedWorkerId ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                  {getWorkerName(taskAssignedWorkerId) || t('maintenance.selectWorker')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Frequency */}
             <View className="mb-5">
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Repeat</Text>
+              <Text className={`text-sm font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.frequency')}</Text>
               <View className="gap-2">
                 {frequencyOptions.map((option) => (
                   <TouchableOpacity
@@ -715,14 +734,16 @@ export function MaintenanceScreen() {
                     onPress={() => setTaskFrequency(option.value)}
                     activeOpacity={0.7}
                     className={`flex-row items-center px-4 py-3 rounded-xl border-2 ${
-                      taskFrequency === option.value ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                      taskFrequency === option.value
+                        ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                        : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                     }`}
                   >
                     <View className="flex-1">
-                      <Text className={`text-base font-medium ${taskFrequency === option.value ? 'text-primary-700' : 'text-slate-700'}`}>
+                      <Text className={`text-base font-medium ${taskFrequency === option.value ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
                         {option.label}
                       </Text>
-                      <Text className="text-xs text-slate-500 mt-0.5">{option.description}</Text>
+                      <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{option.description}</Text>
                     </View>
                     {taskFrequency === option.value && <CheckCircle2 size={20} color={COLORS.primary[500]} />}
                   </TouchableOpacity>
@@ -733,8 +754,8 @@ export function MaintenanceScreen() {
             {/* Reminder */}
             <View className="mb-5">
               <View className="flex-row items-center mb-2">
-                <Bell size={16} color={COLORS.slate[500]} />
-                <Text className="text-sm font-semibold text-slate-700 ml-1.5">Remind me</Text>
+                <Bell size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.remindMe')}</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row gap-2">
@@ -744,10 +765,12 @@ export function MaintenanceScreen() {
                       onPress={() => setTaskReminderDays(option.value)}
                       activeOpacity={0.7}
                       className={`px-4 py-2.5 rounded-xl border-2 ${
-                        taskReminderDays === option.value ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                        taskReminderDays === option.value
+                          ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                          : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                       }`}
                     >
-                      <Text className={`text-sm font-medium ${taskReminderDays === option.value ? 'text-primary-700' : 'text-slate-700'}`}>
+                      <Text className={`text-sm font-medium ${taskReminderDays === option.value ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
                         {option.label}
                       </Text>
                     </TouchableOpacity>
@@ -757,9 +780,9 @@ export function MaintenanceScreen() {
             </View>
 
             {taskFrequency !== 'once' && (
-              <View className="bg-blue-50 rounded-xl p-4 mb-5">
-                <Text className="text-sm text-blue-700">
-                  This task will automatically reschedule after you mark it complete.
+              <View className={`rounded-xl p-4 mb-5 ${isDark ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                <Text className={`text-sm ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+                  {t('maintenance.recurringInfo')}
                 </Text>
               </View>
             )}
@@ -769,19 +792,19 @@ export function MaintenanceScreen() {
         {/* Date Picker Modal */}
         <Modal visible={showDatePicker} transparent animationType="slide">
           <View className="flex-1 justify-end bg-black/50">
-            <View className="bg-white rounded-t-3xl">
-              <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
+            <View className={`rounded-t-3xl ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
                 <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text className="text-base text-slate-600">Cancel</Text>
+                  <Text className={`text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
-                <Text className="text-base font-semibold text-slate-900">Due Date</Text>
+                <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.dueDate')}</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setTaskDueDate(tempTaskDueDate);
                     setShowDatePicker(false);
                   }}
                 >
-                  <Text className="text-base font-semibold text-primary-600">Done</Text>
+                  <Text className="text-base font-semibold text-primary-600">{t('common.done')}</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -792,6 +815,7 @@ export function MaintenanceScreen() {
                   if (selectedDate) setTempTaskDueDate(selectedDate);
                 }}
                 style={{ height: 200 }}
+                textColor={isDark ? '#fff' : undefined}
               />
             </View>
           </View>
@@ -805,12 +829,12 @@ export function MaintenanceScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowWorkerPicker(false)}
       >
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+        <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
             <TouchableOpacity onPress={() => setShowWorkerPicker(false)} className="p-2">
-              <X size={22} color={COLORS.slate[600]} />
+              <X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-slate-900">Select Worker</Text>
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.selectWorker')}</Text>
             <View className="w-10" />
           </View>
 
@@ -821,12 +845,14 @@ export function MaintenanceScreen() {
                 setShowWorkerPicker(false);
               }}
               className={`flex-row items-center px-4 py-3 rounded-xl border-2 mb-2 ${
-                !taskAssignedWorkerId ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                !taskAssignedWorkerId
+                  ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                  : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
               }`}
               activeOpacity={0.7}
             >
-              <Text className={`text-base font-medium ${!taskAssignedWorkerId ? 'text-primary-700' : 'text-slate-700'}`}>
-                No worker assigned
+              <Text className={`text-base font-medium ${!taskAssignedWorkerId ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
+                {t('maintenance.noWorkerAssigned')}
               </Text>
             </TouchableOpacity>
 
@@ -838,17 +864,19 @@ export function MaintenanceScreen() {
                   setShowWorkerPicker(false);
                 }}
                 className={`flex-row items-center px-4 py-3 rounded-xl border-2 mb-2 ${
-                  taskAssignedWorkerId === worker.id ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                  taskAssignedWorkerId === worker.id
+                    ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                    : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                 }`}
                 activeOpacity={0.7}
               >
                 <User size={20} color={taskAssignedWorkerId === worker.id ? COLORS.primary[500] : COLORS.slate[400]} />
                 <View className="flex-1 ml-3">
-                  <Text className={`text-base font-medium ${taskAssignedWorkerId === worker.id ? 'text-primary-700' : 'text-slate-700'}`}>
+                  <Text className={`text-base font-medium ${taskAssignedWorkerId === worker.id ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
                     {worker.name}
                   </Text>
                   {worker.specialty.length > 0 && (
-                    <Text className="text-xs text-slate-500">{worker.specialty.join(', ')}</Text>
+                    <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{worker.specialty.join(', ')}</Text>
                   )}
                 </View>
                 {taskAssignedWorkerId === worker.id && <CheckCircle2 size={20} color={COLORS.primary[500]} />}
@@ -857,7 +885,7 @@ export function MaintenanceScreen() {
 
             {workers.length === 0 && (
               <View className="items-center py-8">
-                <Text className="text-slate-500">No workers added yet</Text>
+                <Text className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.noWorkers')}</Text>
               </View>
             )}
           </ScrollView>
@@ -871,39 +899,41 @@ export function MaintenanceScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowCompleteModal(false)}
       >
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+        <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
             <TouchableOpacity onPress={() => setShowCompleteModal(false)} className="p-2">
-              <X size={22} color={COLORS.slate[600]} />
+              <X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-slate-900">Complete Task</Text>
-            <Button title="Done" variant="primary" size="sm" onPress={handleCompleteTask} />
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.complete')}</Text>
+            <Button title={t('common.done')} variant="primary" size="sm" onPress={handleCompleteTask} />
           </View>
 
           <ScrollView className="flex-1 px-5 py-4">
             {completingTask && (
-              <View className="bg-slate-50 rounded-xl p-4 mb-5">
-                <Text className="text-lg font-semibold text-slate-900">{completingTask.title}</Text>
-                <Text className="text-sm text-slate-500 mt-1">{formatDate(getCurrentISODate(), 'MMMM d, yyyy')}</Text>
+              <View className={`rounded-xl p-4 mb-5 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{completingTask.title}</Text>
+                <Text className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatDate(getCurrentISODate(), 'MMMM d, yyyy')}</Text>
               </View>
             )}
 
             {/* Worker Selection */}
             <View className="mb-5">
               <View className="flex-row items-center mb-2">
-                <User size={16} color={COLORS.slate[500]} />
-                <Text className="text-sm font-semibold text-slate-700 ml-1.5">Who did the work?</Text>
+                <User size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.whoDidWork')}</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row gap-2">
                   <TouchableOpacity
                     onPress={() => setCompletionWorkerId(undefined)}
                     className={`px-4 py-2.5 rounded-xl border-2 ${
-                      !completionWorkerId ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                      !completionWorkerId
+                        ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                        : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                     }`}
                   >
-                    <Text className={`text-sm font-medium ${!completionWorkerId ? 'text-primary-700' : 'text-slate-700'}`}>
-                      Myself
+                    <Text className={`text-sm font-medium ${!completionWorkerId ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
+                      {t('maintenance.myself')}
                     </Text>
                   </TouchableOpacity>
                   {workers.map((worker) => (
@@ -911,10 +941,12 @@ export function MaintenanceScreen() {
                       key={worker.id}
                       onPress={() => setCompletionWorkerId(worker.id)}
                       className={`px-4 py-2.5 rounded-xl border-2 ${
-                        completionWorkerId === worker.id ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white'
+                        completionWorkerId === worker.id
+                          ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                          : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
                       }`}
                     >
-                      <Text className={`text-sm font-medium ${completionWorkerId === worker.id ? 'text-primary-700' : 'text-slate-700'}`}>
+                      <Text className={`text-sm font-medium ${completionWorkerId === worker.id ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
                         {worker.name}
                       </Text>
                     </TouchableOpacity>
@@ -926,8 +958,8 @@ export function MaintenanceScreen() {
             {/* Cost */}
             <View className="mb-5">
               <View className="flex-row items-center mb-2">
-                <DollarSign size={16} color={COLORS.slate[500]} />
-                <Text className="text-sm font-semibold text-slate-700 ml-1.5">Cost (optional)</Text>
+                <DollarSign size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.costOptional')}</Text>
               </View>
               <Input
                 placeholder="0.00"
@@ -940,11 +972,11 @@ export function MaintenanceScreen() {
             {/* Notes */}
             <View className="mb-5">
               <View className="flex-row items-center mb-2">
-                <FileText size={16} color={COLORS.slate[500]} />
-                <Text className="text-sm font-semibold text-slate-700 ml-1.5">Notes (optional)</Text>
+                <FileText size={16} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('maintenance.notesOptional')}</Text>
               </View>
               <Input
-                placeholder="Any observations or notes..."
+                placeholder={t('maintenance.notesPlaceholder')}
                 value={completionNotes}
                 onChangeText={setCompletionNotes}
                 multiline
@@ -962,50 +994,50 @@ export function MaintenanceScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowHistoryModal(false)}
       >
-        <View className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
+        <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
             <TouchableOpacity onPress={() => setShowHistoryModal(false)} className="p-2">
-              <X size={22} color={COLORS.slate[600]} />
+              <X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-slate-900">Completion History</Text>
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.completionHistory')}</Text>
             <View className="w-10" />
           </View>
 
           <ScrollView className="flex-1 px-5 py-4">
             {historyTask && (
-              <View className="bg-slate-50 rounded-xl p-4 mb-5">
-                <Text className="text-lg font-semibold text-slate-900">{historyTask.title}</Text>
-                <Text className="text-sm text-slate-500 mt-1">{FREQUENCY_LABELS[historyTask.frequency]}</Text>
+              <View className={`rounded-xl p-4 mb-5 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{historyTask.title}</Text>
+                <Text className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{getFrequencyLabel(historyTask.frequency)}</Text>
               </View>
             )}
 
             {taskCompletions.length === 0 ? (
               <View className="items-center py-12">
-                <History size={48} color={COLORS.slate[300]} />
-                <Text className="text-slate-500 mt-4">No completion history yet</Text>
+                <History size={48} color={isDark ? COLORS.slate[600] : COLORS.slate[300]} />
+                <Text className={`mt-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.noHistory')}</Text>
               </View>
             ) : (
               <View className="gap-3">
                 {taskCompletions.map((completion, index) => (
                   <Card key={completion.id} variant="default" padding="md">
                     <View className="flex-row items-start">
-                      <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center">
+                      <View className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-green-900/40' : 'bg-green-100'}`}>
                         <CheckCircle2 size={16} color={COLORS.success} />
                       </View>
                       <View className="flex-1 ml-3">
-                        <Text className="text-sm font-semibold text-slate-900">
+                        <Text className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                           {formatDate(completion.completedDate, 'MMMM d, yyyy')}
                         </Text>
                         {completion.workerName ? (
-                          <Text className="text-xs text-slate-500 mt-0.5">Done by {completion.workerName}</Text>
+                          <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.doneBy')} {completion.workerName}</Text>
                         ) : (
-                          <Text className="text-xs text-slate-500 mt-0.5">Done by myself</Text>
+                          <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.doneBy')} {t('maintenance.myself')}</Text>
                         )}
                         {completion.cost && (
-                          <Text className="text-xs text-slate-600 mt-1">Cost: ${completion.cost.toFixed(2)}</Text>
+                          <Text className={`text-xs mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('maintenance.cost')}: ${completion.cost.toFixed(2)}</Text>
                         )}
                         {completion.notes && (
-                          <Text className="text-sm text-slate-600 mt-2 bg-slate-50 p-2 rounded-lg">{completion.notes}</Text>
+                          <Text className={`text-sm mt-2 p-2 rounded-lg ${isDark ? 'text-slate-300 bg-slate-700' : 'text-slate-600 bg-slate-50'}`}>{completion.notes}</Text>
                         )}
                       </View>
                     </View>

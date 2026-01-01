@@ -269,50 +269,42 @@ export const BILL_CATEGORIES = [
 // Maintenance task templates
 export const MAINTENANCE_TEMPLATES = [
   {
-    title: 'HVAC Filter Replacement',
-    description: 'Replace or clean HVAC air filters',
+    key: 'hvacFilter',
     frequency: 'monthly' as const,
     reminderDaysBefore: 3,
   },
   {
-    title: 'Smoke Detector Battery',
-    description: 'Test and replace smoke detector batteries',
+    key: 'smokeDetector',
     frequency: 'biannual' as const,
     reminderDaysBefore: 7,
   },
   {
-    title: 'Gutter Cleaning',
-    description: 'Clean gutters and downspouts',
+    key: 'gutterCleaning',
     frequency: 'biannual' as const,
     reminderDaysBefore: 7,
   },
   {
-    title: 'Water Heater Flush',
-    description: 'Drain and flush water heater tank',
+    key: 'waterHeater',
     frequency: 'yearly' as const,
     reminderDaysBefore: 14,
   },
   {
-    title: 'HVAC Service',
-    description: 'Professional HVAC maintenance and inspection',
+    key: 'hvacService',
     frequency: 'yearly' as const,
     reminderDaysBefore: 14,
   },
   {
-    title: 'Dryer Vent Cleaning',
-    description: 'Clean dryer vent and duct',
+    key: 'dryerVent',
     frequency: 'yearly' as const,
     reminderDaysBefore: 7,
   },
   {
-    title: 'Refrigerator Coils',
-    description: 'Clean refrigerator condenser coils',
+    key: 'refrigeratorCoils',
     frequency: 'yearly' as const,
     reminderDaysBefore: 7,
   },
   {
-    title: 'Septic Tank Pump',
-    description: 'Professional septic tank pumping',
+    key: 'septicTank',
     frequency: 'yearly' as const,
     reminderDaysBefore: 30,
   },

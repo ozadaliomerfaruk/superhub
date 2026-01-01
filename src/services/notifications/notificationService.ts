@@ -179,8 +179,46 @@ class NotificationService {
     }
   }
 
-  // Reschedule all notifications for active maintenance tasks
+  // Intelligently sync notifications - only update what's changed
   async syncMaintenanceNotifications(tasks: MaintenanceTask[]): Promise<void> {
+    const scheduled = await this.getScheduledNotifications();
+
+    // Create a map of existing maintenance notification IDs
+    const existingNotificationIds = new Set<string>();
+    for (const notification of scheduled) {
+      if (notification.identifier.startsWith('maintenance-')) {
+        existingNotificationIds.add(notification.identifier);
+      }
+    }
+
+    // Create a set of expected notification IDs based on current tasks
+    const expectedNotificationIds = new Set<string>();
+    for (const task of tasks) {
+      if (task.isActive && !task.isCompleted) {
+        expectedNotificationIds.add(`maintenance-${task.id}`);
+      }
+    }
+
+    // Cancel notifications that are no longer needed (task deleted/completed)
+    for (const existingId of existingNotificationIds) {
+      if (!expectedNotificationIds.has(existingId)) {
+        await this.cancelNotification(existingId);
+      }
+    }
+
+    // Schedule notifications only for new tasks (not already scheduled)
+    for (const task of tasks) {
+      if (task.isActive && !task.isCompleted) {
+        const notificationId = `maintenance-${task.id}`;
+        if (!existingNotificationIds.has(notificationId)) {
+          await this.scheduleMaintenanceReminder(task);
+        }
+      }
+    }
+  }
+
+  // Force reschedule all notifications (use sparingly)
+  async forceResyncMaintenanceNotifications(tasks: MaintenanceTask[]): Promise<void> {
     // Cancel all existing maintenance notifications
     const scheduled = await this.getScheduledNotifications();
     for (const notification of scheduled) {

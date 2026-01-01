@@ -27,25 +27,25 @@ import { RoomType } from '../../types';
 import { roomRepository } from '../../services/database';
 import { Button, Input, IconButton } from '../../components/ui';
 import { COLORS, ROOM_TYPES } from '../../constants/theme';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type AddRoomRouteProp = RouteProp<RootStackParamList, 'AddRoom'>;
 
-const roomTypeOptions: { value: RoomType; label: string; icon: React.ComponentType<any> }[] = [
-  { value: 'living_room', label: 'Living Room', icon: Sofa },
-  { value: 'bedroom', label: 'Bedroom', icon: Bed },
-  { value: 'kitchen', label: 'Kitchen', icon: CookingPot },
-  { value: 'bathroom', label: 'Bathroom', icon: Bath },
-  { value: 'garage', label: 'Garage', icon: Car },
-  { value: 'basement', label: 'Basement', icon: ArrowDown },
-  { value: 'attic', label: 'Attic', icon: ArrowUp },
-  { value: 'office', label: 'Office', icon: Monitor },
-  { value: 'dining', label: 'Dining', icon: UtensilsCrossed },
-  { value: 'outdoor', label: 'Outdoor', icon: Trees },
-  { value: 'utility', label: 'Utility', icon: Wrench },
-  { value: 'storage', label: 'Storage', icon: Package },
-  { value: 'other', label: 'Other', icon: Grid3x3 },
+const roomTypeOptions: { value: RoomType; icon: React.ComponentType<any> }[] = [
+  { value: 'living_room', icon: Sofa },
+  { value: 'bedroom', icon: Bed },
+  { value: 'kitchen', icon: CookingPot },
+  { value: 'bathroom', icon: Bath },
+  { value: 'garage', icon: Car },
+  { value: 'basement', icon: ArrowDown },
+  { value: 'attic', icon: ArrowUp },
+  { value: 'office', icon: Monitor },
+  { value: 'dining', icon: UtensilsCrossed },
+  { value: 'outdoor', icon: Trees },
+  { value: 'utility', icon: Wrench },
+  { value: 'storage', icon: Package },
+  { value: 'other', icon: Grid3x3 },
 ];
 
 export function AddRoomScreen() {
@@ -53,6 +53,7 @@ export function AddRoomScreen() {
   const route = useRoute<AddRoomRouteProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [type, setType] = useState<RoomType>('living_room');
@@ -63,7 +64,7 @@ export function AddRoomScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('permissions.photosDescription'));
       return;
     }
 
@@ -81,7 +82,7 @@ export function AddRoomScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a room name');
+      Alert.alert(t('common.required'), t('validation.required'));
       return;
     }
 
@@ -99,7 +100,7 @@ export function AddRoomScreen() {
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create room:', error);
-      Alert.alert('Error', 'Failed to create room. Please try again.');
+      Alert.alert(t('common.error'), t('common.tryAgain'));
     } finally {
       setLoading(false);
     }
@@ -114,9 +115,9 @@ export function AddRoomScreen() {
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Add Room</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('room.add')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -132,7 +133,7 @@ export function AddRoomScreen() {
       >
         {/* Image Picker */}
         <View className="mb-6">
-          <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Photo (Optional)</Text>
+          <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('property.photoOptional')}</Text>
           <TouchableOpacity
             onPress={handlePickImage}
             activeOpacity={0.8}
@@ -147,7 +148,7 @@ export function AddRoomScreen() {
             ) : (
               <View className="items-center">
                 <Camera size={28} color={COLORS.slate[400]} />
-                <Text className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Add a photo</Text>
+                <Text className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('property.tapToAddPhoto')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -155,7 +156,7 @@ export function AddRoomScreen() {
 
         {/* Room Name */}
         <Input
-          label="Room Name"
+          label={t('room.name')}
           placeholder="e.g., Master Bedroom, Kitchen"
           value={name}
           onChangeText={setName}
@@ -164,7 +165,7 @@ export function AddRoomScreen() {
 
         {/* Room Type */}
         <View className="mb-6">
-          <Text className={`text-sm font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Room Type</Text>
+          <Text className={`text-sm font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('room.type')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {roomTypeOptions.map((item) => {
               const isSelected = type === item.value;
@@ -190,7 +191,7 @@ export function AddRoomScreen() {
                       isSelected ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                     }`}
                   >
-                    {item.label}
+                    {t(`room.types.${item.value}`)}
                   </Text>
                   {isSelected && (
                     <Check size={14} color={COLORS.primary[600]} className="ml-1" />
@@ -203,8 +204,8 @@ export function AddRoomScreen() {
 
         {/* Notes */}
         <Input
-          label="Notes (Optional)"
-          placeholder="Any additional details about this room..."
+          label={t('maintenance.notesOptional')}
+          placeholder={t('maintenance.notesPlaceholder')}
           value={notes}
           onChangeText={setNotes}
           multiline

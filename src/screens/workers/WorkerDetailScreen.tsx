@@ -39,7 +39,7 @@ import { ScreenHeader, Card, PressableCard, Button, IconButton, Badge, EmptyStat
 import { COLORS, EXPENSE_TYPES } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { formatDate, formatRelativeDate } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type WorkerDetailRouteProp = RouteProp<RootStackParamList, 'WorkerDetail'>;
@@ -49,6 +49,7 @@ export function WorkerDetailScreen() {
   const route = useRoute<WorkerDetailRouteProp>();
   const { workerId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [worker, setWorker] = useState<Worker | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -115,12 +116,12 @@ export function WorkerDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Worker',
-      `Are you sure you want to delete "${worker?.name}"? This action cannot be undone.`,
+      t('worker.delete'),
+      t('worker.deleteConfirm', { name: worker?.name || '' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -128,7 +129,7 @@ export function WorkerDetailScreen() {
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete worker:', error);
-              Alert.alert('Error', 'Failed to delete worker');
+              Alert.alert(t('common.error'), t('worker.alerts.deleteError'));
             }
           },
         },
@@ -143,19 +144,19 @@ export function WorkerDetailScreen() {
   const handleAddExpense = () => {
     // Navigate to add expense with worker pre-selected
     // For now, we can't select a property, so this is a placeholder
-    Alert.alert('Add Expense', 'Please add an expense from a property and link it to this worker.');
+    Alert.alert(t('expense.add'), t('worker.alerts.addExpenseInfo'));
   };
 
   if (!worker) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <ScreenHeader
-          title="Worker"
+          title={t('worker.workerSingular')}
           showBack
           onBack={() => navigation.goBack()}
         />
         <View className="flex-1 items-center justify-center">
-          <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>Loading...</Text>
+          <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('common.loading')}</Text>
         </View>
       </View>
     );
@@ -183,7 +184,7 @@ export function WorkerDetailScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Worker Details"
+        title={t('worker.workerSingular')}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={
@@ -277,7 +278,7 @@ export function WorkerDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Phone size={18} color="#ffffff" />
-                <Text className="text-white font-semibold ml-2">Call</Text>
+                <Text className="text-white font-semibold ml-2">{t('worker.call')}</Text>
               </TouchableOpacity>
             )}
             {worker.phone && (
@@ -287,7 +288,7 @@ export function WorkerDetailScreen() {
                 activeOpacity={0.8}
               >
                 <MessageCircle size={18} color={isDark ? COLORS.slate[300] : COLORS.slate[700]} />
-                <Text className={`font-semibold ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Message</Text>
+                <Text className={`font-semibold ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('worker.message')}</Text>
               </TouchableOpacity>
             )}
             {worker.email && (
@@ -297,7 +298,7 @@ export function WorkerDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Mail size={18} color={isDark ? COLORS.slate[300] : COLORS.slate[700]} />
-                <Text className={`font-semibold ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Email</Text>
+                <Text className={`font-semibold ml-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('worker.sendEmail')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -314,7 +315,7 @@ export function WorkerDetailScreen() {
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {formatCurrency(totalExpenses)}
             </Text>
-            <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Paid</Text>
+            <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.totalPaid')}</Text>
           </Card>
 
           <Card variant="default" padding="md" className="flex-1">
@@ -326,7 +327,7 @@ export function WorkerDetailScreen() {
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {expenses.length}
             </Text>
-            <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Jobs Completed</Text>
+            <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.jobsCompleted')}</Text>
           </Card>
 
           <Card variant="default" padding="md" className="flex-1">
@@ -338,14 +339,14 @@ export function WorkerDetailScreen() {
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {expenses.length > 0 ? formatRelativeDate(expenses[0].date) : '-'}
             </Text>
-            <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Last Job</Text>
+            <Text className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.lastJob')}</Text>
           </Card>
         </View>
 
         {/* Contact Info */}
         <View className="px-5 mt-5">
           <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Contact Information
+            {t('worker.contactInfo')}
           </Text>
           <Card variant="default" padding="none">
             {worker.phone && (
@@ -358,7 +359,7 @@ export function WorkerDetailScreen() {
                   <Phone size={18} color={COLORS.primary[isDark ? 400 : 600]} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Phone</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.phone')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{worker.phone}</Text>
                 </View>
                 <ChevronRight size={20} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
@@ -374,7 +375,7 @@ export function WorkerDetailScreen() {
                   <Mail size={18} color={COLORS.info} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Email</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.email')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>
                     {worker.email}
                   </Text>
@@ -384,7 +385,7 @@ export function WorkerDetailScreen() {
             )}
             {!worker.phone && !worker.email && (
               <View className="px-4 py-4">
-                <Text className={`text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No contact information added</Text>
+                <Text className={`text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('worker.noContactInfo')}</Text>
               </View>
             )}
           </Card>
@@ -394,7 +395,7 @@ export function WorkerDetailScreen() {
         {worker.notes && (
           <View className="px-5 mt-5">
             <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Notes
+              {t('worker.notes')}
             </Text>
             <Card variant="default" padding="md">
               <Text className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{worker.notes}</Text>
@@ -406,7 +407,7 @@ export function WorkerDetailScreen() {
         <View className="px-5 mt-5">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Assigned Tasks
+              {t('worker.assignedTasks')}
             </Text>
             <View className={`px-2 py-0.5 rounded-full ${isDark ? 'bg-primary-900/40' : 'bg-primary-100'}`}>
               <Text className={`text-xs font-semibold ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>{assignedTasks.length}</Text>
@@ -458,7 +459,7 @@ export function WorkerDetailScreen() {
                         <Text className={`text-xs font-medium ${
                           task.isCompleted ? 'text-green-500' : isOverdue ? 'text-red-500' : 'text-amber-500'
                         }`}>
-                          {task.isCompleted ? 'Done' : isOverdue ? 'Overdue' : 'Pending'}
+                          {task.isCompleted ? t('worker.taskStatus.done') : isOverdue ? t('worker.taskStatus.overdue') : t('worker.taskStatus.pending')}
                         </Text>
                       </View>
                     </View>
@@ -472,9 +473,9 @@ export function WorkerDetailScreen() {
                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
                   <ClipboardList size={24} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
-                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>No tasks assigned</Text>
+                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('worker.noTasksAssigned')}</Text>
                 <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Tasks assigned to this worker will appear here
+                  {t('worker.tasksWillAppear')}
                 </Text>
               </View>
             </Card>
@@ -485,7 +486,7 @@ export function WorkerDetailScreen() {
         <View className="px-5 mt-5">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Completed Task History
+              {t('worker.completedTaskHistory')}
             </Text>
             <View className={`px-2 py-0.5 rounded-full ${isDark ? 'bg-green-900/40' : 'bg-green-100'}`}>
               <Text className={`text-xs font-semibold ${isDark ? 'text-green-400' : 'text-green-700'}`}>{completedTasks.length}</Text>
@@ -532,9 +533,9 @@ export function WorkerDetailScreen() {
                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
                   <CheckCircle size={24} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
-                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>No tasks completed yet</Text>
+                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('worker.noTasksCompleted')}</Text>
                 <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Completed tasks by this worker will appear here
+                  {t('worker.completedTasksWillAppear')}
                 </Text>
               </View>
             </Card>
@@ -545,11 +546,11 @@ export function WorkerDetailScreen() {
         <View className="px-5 mt-5 mb-8">
           <View className="flex-row items-center justify-between mb-3">
             <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Recent Jobs (Expenses)
+              {t('worker.recentJobs')}
             </Text>
             {expenses.length > 5 && (
               <TouchableOpacity>
-                <Text className="text-sm font-medium text-primary-500">See All</Text>
+                <Text className="text-sm font-medium text-primary-500">{t('common.seeAll')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -599,9 +600,9 @@ export function WorkerDetailScreen() {
                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
                   <FileText size={24} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
-                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>No jobs recorded yet</Text>
+                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('worker.noJobsRecorded')}</Text>
                 <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Expenses linked to this worker will appear here
+                  {t('worker.expensesWillAppear')}
                 </Text>
               </View>
             </Card>
@@ -613,7 +614,7 @@ export function WorkerDetailScreen() {
           <View className="flex-row items-center justify-center py-3">
             <Calendar size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
             <Text className={`text-sm ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Added {formatDate(worker.createdAt)}
+              {t('worker.addedOn')} {formatDate(worker.createdAt)}
             </Text>
           </View>
         </View>

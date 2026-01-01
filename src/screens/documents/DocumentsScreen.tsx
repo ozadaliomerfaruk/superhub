@@ -32,23 +32,23 @@ import { documentRepository, propertyRepository } from '../../services/database'
 import { ScreenHeader, Card, Button, Badge, InputDialog } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
 import { formatDate } from '../../utils/date';
-import { useToast, useTheme } from '../../contexts';
+import { useToast, useTheme, useTranslation } from '../../contexts';
 import { getImageQuality } from '../../utils/image';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type DocumentsRouteProp = RouteProp<RootStackParamList, 'Documents'>;
 
-const DOCUMENT_TYPES: Array<{ value: Document['type']; label: string; icon: any; color: string }> = [
-  { value: 'manual', label: 'Manual', icon: Book, color: '#3b82f6' },
-  { value: 'warranty', label: 'Warranty', icon: Shield, color: '#22c55e' },
-  { value: 'receipt', label: 'Receipt', icon: Receipt, color: '#8b5cf6' },
-  { value: 'contract', label: 'Contract', icon: FileSignature, color: '#f97316' },
-  { value: 'photo', label: 'Photo', icon: ImageIcon, color: '#ec4899' },
-  { value: 'other', label: 'Other', icon: File, color: '#64748b' },
+const DOCUMENT_TYPE_KEYS: Array<{ value: Document['type']; key: string; icon: any; color: string }> = [
+  { value: 'manual', key: 'manual', icon: Book, color: '#3b82f6' },
+  { value: 'warranty', key: 'warranty', icon: Shield, color: '#22c55e' },
+  { value: 'receipt', key: 'receipt', icon: Receipt, color: '#8b5cf6' },
+  { value: 'contract', key: 'contract', icon: FileSignature, color: '#f97316' },
+  { value: 'photo', key: 'photo', icon: ImageIcon, color: '#ec4899' },
+  { value: 'other', key: 'other', icon: File, color: '#64748b' },
 ];
 
 function getDocumentTypeConfig(type: Document['type']) {
-  return DOCUMENT_TYPES.find((t) => t.value === type) || DOCUMENT_TYPES[5];
+  return DOCUMENT_TYPE_KEYS.find((t) => t.value === type) || DOCUMENT_TYPE_KEYS[5];
 }
 
 export function DocumentsScreen() {
@@ -58,6 +58,9 @@ export function DocumentsScreen() {
 
   const { showSuccess, showError } = useToast();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
+
+  const getDocumentTypeLabel = (key: string) => t(`documents.types.${key}`);
 
   const [property, setProperty] = useState<Property | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -131,7 +134,7 @@ export function DocumentsScreen() {
       }
     } catch (error) {
       console.error('Failed to pick document:', error);
-      showError('Failed to add document');
+      showError(t('documents.alerts.addFailed'));
     }
     setShowAddOptions(false);
   };
@@ -155,7 +158,7 @@ export function DocumentsScreen() {
       }
     } catch (error) {
       console.error('Failed to pick image:', error);
-      showError('Failed to add image');
+      showError(t('documents.alerts.imageFailed'));
     }
     setShowAddOptions(false);
   };
@@ -177,11 +180,11 @@ export function DocumentsScreen() {
         fileType: pendingDocument.fileType,
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showSuccess('Document added successfully');
+      showSuccess(t('common.success'));
       loadData();
     } catch (error) {
       console.error('Failed to save document:', error);
-      showError('Failed to save document');
+      showError(t('documents.alerts.saveFailed'));
     } finally {
       setShowNameDialog(false);
       setPendingDocument(null);
@@ -193,18 +196,18 @@ export function DocumentsScreen() {
       await Linking.openURL(doc.fileUri);
     } catch (error) {
       console.error('Failed to open document:', error);
-      Alert.alert('Error', 'Unable to open this document');
+      Alert.alert(t('common.error'), t('documents.alerts.openFailed'));
     }
   };
 
   const handleDelete = (doc: Document) => {
     Alert.alert(
-      'Delete Document',
-      `Are you sure you want to delete "${doc.name}"?`,
+      t('documents.deleteTitle'),
+      t('documents.deleteMessage', { name: doc.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -212,7 +215,7 @@ export function DocumentsScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete document:', error);
-              Alert.alert('Error', 'Failed to delete document');
+              Alert.alert(t('common.error'), t('documents.alerts.deleteFailed'));
             }
           },
         },
@@ -222,11 +225,11 @@ export function DocumentsScreen() {
 
   const showDocumentTypeSelector = () => {
     Alert.alert(
-      'Select Document Type',
-      'What type of document is this?',
+      t('documents.selectType'),
+      t('documents.whatType'),
       [
-        ...DOCUMENT_TYPES.map((type) => ({
-          text: type.label,
+        ...DOCUMENT_TYPE_KEYS.map((type) => ({
+          text: getDocumentTypeLabel(type.key),
           onPress: () => {
             if (type.value === 'photo') {
               handlePickImage(type.value);
@@ -235,7 +238,7 @@ export function DocumentsScreen() {
             }
           },
         })),
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]
     );
   };
@@ -250,7 +253,7 @@ export function DocumentsScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Documents"
+        title={t('documents.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -299,10 +302,10 @@ export function DocumentsScreen() {
                     : isDark ? 'text-slate-300' : 'text-slate-600'
                 }`}
               >
-                All ({documents.length})
+                {t('documents.all')} ({documents.length})
               </Text>
             </TouchableOpacity>
-            {DOCUMENT_TYPES.map((type) => {
+            {DOCUMENT_TYPE_KEYS.map((type) => {
               const count = documents.filter((d) => d.type === type.value).length;
               if (count === 0) return null;
               return (
@@ -323,7 +326,7 @@ export function DocumentsScreen() {
                         : isDark ? 'text-slate-300' : 'text-slate-600'
                     }`}
                   >
-                    {type.label} ({count})
+                    {getDocumentTypeLabel(type.key)} ({count})
                   </Text>
                 </TouchableOpacity>
               );
@@ -340,13 +343,13 @@ export function DocumentsScreen() {
                   <FileText size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 </View>
                 <Text className={`text-lg font-semibold text-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No documents saved
+                  {t('documents.noDocuments')}
                 </Text>
                 <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Store manuals, warranties, receipts, and contracts for easy access
+                  {t('documents.storeDocuments')}
                 </Text>
                 <Button
-                  title="Add Document"
+                  title={t('documents.addDocument')}
                   onPress={showDocumentTypeSelector}
                   variant="primary"
                   className="mt-4"
@@ -368,7 +371,7 @@ export function DocumentsScreen() {
                     <View className="flex-row items-center mb-2">
                       <Icon size={14} color={typeConfig.color} />
                       <Text className={`text-sm font-semibold uppercase tracking-wide ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {typeConfig.label} ({docs.length})
+                        {getDocumentTypeLabel(typeConfig.key)} ({docs.length})
                       </Text>
                     </View>
 
@@ -407,11 +410,11 @@ export function DocumentsScreen() {
       {/* Document Name Dialog */}
       <InputDialog
         visible={showNameDialog}
-        title="Document Name"
-        message="Enter a name for this document"
-        placeholder="Document name"
+        title={t('documents.documentName')}
+        message={t('documents.enterDocumentName')}
+        placeholder={t('documents.documentNamePlaceholder')}
         defaultValue={pendingDocument?.defaultName || ''}
-        confirmText="Save"
+        confirmText={t('common.save')}
         onCancel={() => {
           setShowNameDialog(false);
           setPendingDocument(null);

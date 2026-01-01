@@ -10,3 +10,4 @@ export {
   getPhotoQualityLabel,
 } from './SettingsContext';
 export { ToastProvider, useToast } from './ToastContext';
+export { LanguageProvider, useLanguage, useTranslation } from './LanguageContext';

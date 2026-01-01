@@ -5,9 +5,9 @@ import {
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Pressable,
   Animated,
   Dimensions,
+  StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -21,15 +21,22 @@ import {
   DollarSign,
   Users,
   Wrench,
-  Palette,
-  Box,
-  Ruler,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
 import { Property } from '../types';
 import { propertyRepository } from '../services/database';
-import { COLORS, SHADOWS } from '../constants/theme';
-import { useTheme } from '../contexts';
+import { useTheme, useTranslation } from '../contexts';
+import {
+  COLORS,
+  getModalGlass,
+  getGlassShadow,
+  supportsBlur,
+  RADIUS,
+  SPRING,
+  DURATION,
+  BlurViewWrapper,
+  isBlurAvailable,
+} from '../design-system';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,7 +48,7 @@ interface QuickAddSheetProps {
 interface QuickAction {
   id: string;
   icon: React.ReactNode;
-  label: string;
+  labelKey: string;
   color: string;
   bgColorLight: string;
   bgColorDark: string;
@@ -53,7 +60,7 @@ const quickActions: QuickAction[] = [
   {
     id: 'property',
     icon: <Home size={24} color="#22c55e" />,
-    label: 'Property',
+    labelKey: 'quickAdd.property',
     color: '#22c55e',
     bgColorLight: '#f0fdf4',
     bgColorDark: 'rgba(34, 197, 94, 0.2)',
@@ -62,7 +69,7 @@ const quickActions: QuickAction[] = [
   {
     id: 'room',
     icon: <DoorOpen size={24} color="#3b82f6" />,
-    label: 'Room',
+    labelKey: 'quickAdd.room',
     color: '#3b82f6',
     bgColorLight: '#eff6ff',
     bgColorDark: 'rgba(59, 130, 246, 0.2)',
@@ -74,7 +81,7 @@ const quickActions: QuickAction[] = [
   {
     id: 'expense',
     icon: <DollarSign size={24} color="#8b5cf6" />,
-    label: 'Expense',
+    labelKey: 'quickAdd.expense',
     color: '#8b5cf6',
     bgColorLight: '#f5f3ff',
     bgColorDark: 'rgba(139, 92, 246, 0.2)',
@@ -86,7 +93,7 @@ const quickActions: QuickAction[] = [
   {
     id: 'asset',
     icon: <Package size={24} color="#ec4899" />,
-    label: 'Asset',
+    labelKey: 'quickAdd.asset',
     color: '#ec4899',
     bgColorLight: '#fdf2f8',
     bgColorDark: 'rgba(236, 72, 153, 0.2)',
@@ -98,7 +105,7 @@ const quickActions: QuickAction[] = [
   {
     id: 'worker',
     icon: <Users size={24} color="#f97316" />,
-    label: 'Worker',
+    labelKey: 'quickAdd.worker',
     color: '#f97316',
     bgColorLight: '#fff7ed',
     bgColorDark: 'rgba(249, 115, 22, 0.2)',
@@ -107,7 +114,7 @@ const quickActions: QuickAction[] = [
   {
     id: 'maintenance',
     icon: <Wrench size={24} color="#14b8a6" />,
-    label: 'Task',
+    labelKey: 'quickAdd.task',
     color: '#14b8a6',
     bgColorLight: '#f0fdfa',
     bgColorDark: 'rgba(20, 184, 166, 0.2)',
@@ -124,10 +131,19 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Glass config
+  const glassConfig = getModalGlass(isDark);
+  const shadow = getGlassShadow('modal', isDark);
+  const canBlur = supportsBlur() && isBlurAvailable();
+
+  // Fallback background
+  const fallbackBackground = isDark ? '#1e293b' : '#ffffff';
 
   const loadProperties = useCallback(async () => {
     try {
@@ -148,13 +164,13 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200,
+          duration: DURATION.normal,
           useNativeDriver: true,
         }),
         Animated.spring(slideAnim, {
           toValue: 0,
-          damping: 20,
-          stiffness: 300,
+          damping: SPRING.default.damping,
+          stiffness: SPRING.default.stiffness,
           useNativeDriver: true,
         }),
       ]).start();
@@ -163,12 +179,12 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 150,
+          duration: DURATION.fast,
           useNativeDriver: true,
         }),
         Animated.timing(slideAnim, {
           toValue: SCREEN_HEIGHT,
-          duration: 200,
+          duration: DURATION.normal,
           useNativeDriver: true,
         }),
       ]).start();
@@ -204,8 +220,8 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
       <View className="flex-1">
         {/* Backdrop */}
         <Animated.View
-          style={{ opacity: fadeAnim }}
-          className="absolute inset-0 bg-black/50"
+          style={[{ opacity: fadeAnim }, { backgroundColor: glassConfig.overlayColor }]}
+          className="absolute inset-0"
         >
           <TouchableWithoutFeedback onPress={handleClose}>
             <View className="flex-1" />
@@ -214,22 +230,75 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
 
         {/* Sheet */}
         <Animated.View
-          style={{
-            transform: [{ translateY: slideAnim }],
-          }}
-          className={`absolute bottom-0 left-0 right-0 rounded-t-3xl ${isDark ? 'bg-slate-800' : 'bg-white'}`}
+          style={[
+            {
+              transform: [{ translateY: slideAnim }],
+              borderTopLeftRadius: RADIUS['3xl'],
+              borderTopRightRadius: RADIUS['3xl'],
+              ...shadow,
+            },
+          ]}
+          className="absolute bottom-0 left-0 right-0 overflow-hidden"
         >
+          {/* Glass Background */}
+          {canBlur ? (
+            <>
+              <BlurViewWrapper
+                intensity={glassConfig.blur}
+                tint={isDark ? 'dark' : 'light'}
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    borderTopLeftRadius: RADIUS['3xl'],
+                    borderTopRightRadius: RADIUS['3xl'],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: glassConfig.background,
+                    borderTopLeftRadius: RADIUS['3xl'],
+                    borderTopRightRadius: RADIUS['3xl'],
+                  },
+                ]}
+              />
+            </>
+          ) : (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: fallbackBackground,
+                  borderTopLeftRadius: RADIUS['3xl'],
+                  borderTopRightRadius: RADIUS['3xl'],
+                },
+              ]}
+            />
+          )}
+
           {/* Handle */}
-          <View className="items-center pt-3 pb-2">
-            <View className={`w-10 h-1 rounded-full ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
+          <View className="items-center pt-3 pb-2" style={{ position: 'relative', zIndex: 1 }}>
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(148, 163, 184, 0.5)',
+              }}
+            />
           </View>
 
           {/* Header */}
-          <View className={`flex-row items-center justify-between px-5 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
-            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Quick Add</Text>
+          <View
+            className={`flex-row items-center justify-between px-5 py-3 border-b ${isDark ? 'border-slate-700/50' : 'border-slate-200/50'}`}
+            style={{ position: 'relative', zIndex: 1 }}
+          >
+            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('quickAdd.title')}</Text>
             <TouchableOpacity
               onPress={handleClose}
-              className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
+              className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-700/50' : 'bg-slate-100/80'}`}
               activeOpacity={0.7}
             >
               <X size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
@@ -238,9 +307,12 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
 
           {/* Property Selector */}
           {properties.length > 0 && (
-            <View className={`px-5 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+            <View
+              className={`px-5 py-3 border-b ${isDark ? 'border-slate-700/50' : 'border-slate-200/50'}`}
+              style={{ position: 'relative', zIndex: 1 }}
+            >
               <Text className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Select Property
+                {t('quickAdd.selectProperty')}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {properties.map((property) => (
@@ -254,7 +326,7 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
                     className={`px-4 py-2 rounded-xl border-2 ${
                       selectedProperty?.id === property.id
                         ? isDark ? 'border-primary-500 bg-primary-900/30' : 'border-primary-500 bg-primary-50'
-                        : isDark ? 'border-slate-600 bg-slate-700' : 'border-slate-200 bg-white'
+                        : isDark ? 'border-slate-600/50 bg-slate-700/50' : 'border-slate-200/80 bg-white/80'
                     }`}
                   >
                     <Text
@@ -274,7 +346,10 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
           )}
 
           {/* Quick Actions Grid */}
-          <View className="px-5 py-4" style={{ paddingBottom: insets.bottom + 16 }}>
+          <View
+            className="px-5 py-4"
+            style={{ paddingBottom: insets.bottom + 16, position: 'relative', zIndex: 1 }}
+          >
             <View className="flex-row flex-wrap justify-between">
               {quickActions.map((action) => {
                 const isDisabled = action.requiresProperty && properties.length === 0;
@@ -293,7 +368,7 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
                       {action.icon}
                     </View>
                     <Text className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {action.label}
+                      {t(action.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -301,9 +376,9 @@ export function QuickAddSheet({ visible, onClose }: QuickAddSheetProps) {
             </View>
 
             {properties.length === 0 && (
-              <View className={`mt-2 p-4 rounded-xl border ${isDark ? 'bg-amber-900/30 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
+              <View className={`mt-2 p-4 rounded-xl border ${isDark ? 'bg-amber-900/30 border-amber-800/50' : 'bg-amber-50 border-amber-100'}`}>
                 <Text className={`text-sm text-center ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>
-                  Add a property first to unlock more options
+                  {t('quickAdd.addPropertyFirst')}
                 </Text>
               </View>
             )}

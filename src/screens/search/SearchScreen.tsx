@@ -35,7 +35,7 @@ import { ScreenHeader, Card, Badge } from '../../components/ui';
 import { COLORS, ROOM_TYPES, ASSET_CATEGORIES, EXPENSE_TYPES } from '../../constants/theme';
 import { formatDate, formatRelative } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 // Expense filter options
 const AMOUNT_RANGES = [
@@ -88,6 +88,7 @@ const CATEGORIES: Array<{ key: SearchCategory; label: string; icon: React.Elemen
 export function SearchScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<SearchCategory>('all');
@@ -278,7 +279,7 @@ export function SearchScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Search"
+        title={t('search.title')}
         showBack
         onBack={() => navigation.goBack()}
       />
@@ -290,7 +291,7 @@ export function SearchScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search properties, rooms, assets..."
+            placeholder={t('search.placeholder')}
             className={`flex-1 ml-3 text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
             placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
             autoFocus
@@ -474,7 +475,7 @@ export function SearchScreen() {
             <View className="flex-row items-center mb-2">
               <Clock size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Text className={`text-sm font-semibold uppercase tracking-wide ml-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Recent Searches
+                {t('search.recentSearches')}
               </Text>
             </View>
             <View className="flex-row flex-wrap gap-2">
@@ -499,10 +500,10 @@ export function SearchScreen() {
               <View className="items-center py-6">
                 <SearchIcon size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
                 <Text className={`text-base font-semibold text-center mt-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  No results for "{query}"
+                  {t('search.noResults', { query })}
                 </Text>
                 <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Try a different search term
+                  {t('common.tryDifferentSearch')}
                 </Text>
               </View>
             </Card>

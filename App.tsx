@@ -11,7 +11,7 @@ import { getDatabase } from './src/services/database';
 import { COLORS } from './src/constants/theme';
 import { notificationService } from './src/services/notifications';
 import { authService } from './src/services/auth';
-import { ThemeProvider, useTheme, SettingsProvider, ToastProvider } from './src/contexts';
+import { ThemeProvider, useTheme, SettingsProvider, ToastProvider, LanguageProvider } from './src/contexts';
 import { OnboardingScreen, ONBOARDING_COMPLETE_KEY } from './src/screens/onboarding';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { initializeCurrencyCache } from './src/utils/currency';
@@ -193,13 +193,15 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <SafeAreaProvider>
-          <ThemeProvider>
-            <SettingsProvider>
-              <ToastProvider>
-                <AppContent />
-              </ToastProvider>
-            </SettingsProvider>
-          </ThemeProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <SettingsProvider>
+                <ToastProvider>
+                  <AppContent />
+                </ToastProvider>
+              </SettingsProvider>
+            </ThemeProvider>
+          </LanguageProvider>
         </SafeAreaProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>

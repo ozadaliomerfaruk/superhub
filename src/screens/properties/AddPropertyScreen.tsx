@@ -10,7 +10,7 @@ import { Property } from '../../types';
 import { propertyRepository } from '../../services/database';
 import { Button, Input, IconButton } from '../../components/ui';
 import { COLORS, PROPERTY_TYPES } from '../../constants/theme';
-import { useToast, useTheme } from '../../contexts';
+import { useToast, useTheme, useTranslation } from '../../contexts';
 import { getImageQuality } from '../../utils/image';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -21,12 +21,12 @@ type PropertyTypeOption = {
   Icon: typeof Home;
 };
 
-const propertyTypes: PropertyTypeOption[] = [
-  { value: 'home', label: 'Home', Icon: Home },
-  { value: 'vacation', label: 'Vacation', Icon: Palmtree },
-  { value: 'office', label: 'Office', Icon: Building2 },
-  { value: 'rental', label: 'Rental', Icon: Key },
-  { value: 'other', label: 'Other', Icon: MapPin },
+const getPropertyTypes = (t: (key: string) => string): PropertyTypeOption[] => [
+  { value: 'home', label: t('property.types.home'), Icon: Home },
+  { value: 'vacation', label: t('property.types.vacation'), Icon: Palmtree },
+  { value: 'office', label: t('property.types.office'), Icon: Building2 },
+  { value: 'rental', label: t('property.types.rental'), Icon: Key },
+  { value: 'other', label: t('property.types.other'), Icon: MapPin },
 ];
 
 export function AddPropertyScreen() {
@@ -34,6 +34,7 @@ export function AddPropertyScreen() {
   const insets = useSafeAreaInsets();
   const { showSuccess, showError } = useToast();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -41,10 +42,12 @@ export function AddPropertyScreen() {
   const [imageUri, setImageUri] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
 
+  const propertyTypes = getPropertyTypes(t);
+
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('property.alerts.photoLibraryPermission'));
       return;
     }
 
@@ -64,7 +67,7 @@ export function AddPropertyScreen() {
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant camera access');
+      Alert.alert(t('common.permissionRequired'), t('property.alerts.cameraPermission'));
       return;
     }
 
@@ -82,7 +85,7 @@ export function AddPropertyScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a property name');
+      Alert.alert(t('common.required'), t('property.alerts.nameRequired'));
       return;
     }
 
@@ -96,11 +99,11 @@ export function AddPropertyScreen() {
         imageUri,
       });
 
-      showSuccess('Property created successfully');
+      showSuccess(t('property.alerts.createSuccess'));
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create property:', error);
-      showError('Failed to create property. Please try again.');
+      showError(t('property.alerts.createError'));
     } finally {
       setLoading(false);
     }
@@ -164,9 +167,9 @@ export function AddPropertyScreen() {
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Add Property</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('property.addTitle')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -181,7 +184,7 @@ export function AddPropertyScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="mb-6">
-          <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Photo (Optional)</Text>
+          <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('property.photoOptional')}</Text>
           <TouchableOpacity
             onPress={handlePickImage}
             activeOpacity={0.8}
@@ -203,7 +206,7 @@ export function AddPropertyScreen() {
                 </View>
                 <View className="flex-row items-center">
                   <Camera size={16} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
-                  <Text className={`text-sm ml-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tap to add photo</Text>
+                  <Text className={`text-sm ml-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('property.tapToAddPhoto')}</Text>
                 </View>
               </View>
             )}
@@ -212,14 +215,14 @@ export function AddPropertyScreen() {
           {imageUri && (
             <View className="flex-row gap-2 mt-2">
               <Button
-                title="Change"
+                title={t('common.change')}
                 variant="outline"
                 size="sm"
                 onPress={handlePickImage}
                 className="flex-1"
               />
               <Button
-                title="Take Photo"
+                title={t('property.takePhoto')}
                 variant="outline"
                 size="sm"
                 icon={<Camera size={16} color={isDark ? COLORS.slate[300] : COLORS.slate[700]} />}
@@ -231,16 +234,16 @@ export function AddPropertyScreen() {
         </View>
 
         <Input
-          label="Property Name"
-          placeholder="e.g., Main House, Beach Condo"
+          label={t('property.name')}
+          placeholder={t('property.namePlaceholder')}
           value={name}
           onChangeText={setName}
           containerClassName="mb-4"
         />
 
         <Input
-          label="Address (Optional)"
-          placeholder="123 Main St, City, State, ZIP"
+          label={t('property.addressOptional')}
+          placeholder={t('property.addressPlaceholder')}
           value={address}
           onChangeText={setAddress}
           multiline
@@ -249,7 +252,7 @@ export function AddPropertyScreen() {
         />
 
         <View>
-          <Text className={`text-sm font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Property Type</Text>
+          <Text className={`text-sm font-medium mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('property.type')}</Text>
           <View className="flex-row flex-wrap gap-3">
             {propertyTypes.map(renderPropertyTypeButton)}
           </View>

@@ -43,7 +43,7 @@ import { ScreenHeader, Card, PressableCard, Button, IconButton, Badge } from '..
 import { COLORS, EXPENSE_TYPES, ASSET_CATEGORIES } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
 import { formatDate, formatRelativeDate } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ExpenseDetailRouteProp = RouteProp<RootStackParamList, 'ExpenseDetail'>;
@@ -53,6 +53,7 @@ export function ExpenseDetailScreen() {
   const route = useRoute<ExpenseDetailRouteProp>();
   const { expenseId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [expense, setExpense] = useState<Expense | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
@@ -116,12 +117,12 @@ export function ExpenseDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Expense',
-      'Are you sure you want to delete this expense? This action cannot be undone.',
+      t('expense.delete'),
+      t('expense.deleteConfirmation'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -133,7 +134,7 @@ export function ExpenseDetailScreen() {
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete expense:', error);
-              Alert.alert('Error', 'Failed to delete expense');
+              Alert.alert(t('common.error'), t('expense.deleteError'));
             }
           },
         },
@@ -175,12 +176,12 @@ export function ExpenseDetailScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <ScreenHeader
-          title="Expense"
+          title={t('expense.title')}
           showBack
           onBack={() => navigation.goBack()}
         />
         <View className="flex-1 items-center justify-center">
-          <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>Loading...</Text>
+          <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('common.loading')}</Text>
         </View>
       </View>
     );
@@ -191,7 +192,7 @@ export function ExpenseDetailScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Expense Details"
+        title={t('expense.details')}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={
@@ -254,7 +255,7 @@ export function ExpenseDetailScreen() {
                 {expense.isRecurring && (
                   <View className={`flex-row items-center px-2 py-0.5 rounded-full ${isDark ? 'bg-purple-900/40' : 'bg-purple-100'}`}>
                     <Repeat size={12} color={COLORS.categories.bill} />
-                    <Text className={`text-xs font-medium ml-1 ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>Recurring</Text>
+                    <Text className={`text-xs font-medium ml-1 ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>{t('expense.recurring')}</Text>
                   </View>
                 )}
               </View>
@@ -297,7 +298,7 @@ export function ExpenseDetailScreen() {
         {/* Linked Items */}
         <View className="px-5 mt-5">
           <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Linked To
+            {t('common.linkedTo')}
           </Text>
           <Card variant="default" padding="none" className={isDark ? 'bg-slate-800' : ''}>
             {/* Property */}
@@ -311,7 +312,7 @@ export function ExpenseDetailScreen() {
                   <Home size={20} color={COLORS.primary[600]} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Property</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.property')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{property.name}</Text>
                 </View>
                 <ChevronRight size={20} color={COLORS.slate[400]} />
@@ -329,7 +330,7 @@ export function ExpenseDetailScreen() {
                   <MapPin size={20} color={COLORS.info} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Room</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.room')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{room.name}</Text>
                 </View>
                 <ChevronRight size={20} color={COLORS.slate[400]} />
@@ -347,7 +348,7 @@ export function ExpenseDetailScreen() {
                   <Package size={20} color={COLORS.categories.asset} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asset</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.asset')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.name}</Text>
                   {(asset.brand || asset.model) && (
                     <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -370,7 +371,7 @@ export function ExpenseDetailScreen() {
                   <User size={20} color={COLORS.categories.worker} />
                 </View>
                 <View className="flex-1 ml-3">
-                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Worker</Text>
+                  <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.worker')}</Text>
                   <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{worker.name}</Text>
                   {worker.company && (
                     <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{worker.company}</Text>
@@ -382,7 +383,7 @@ export function ExpenseDetailScreen() {
 
             {!property && !room && !asset && !worker && (
               <View className="px-4 py-4">
-                <Text className={`text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No linked items</Text>
+                <Text className={`text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.noLinkedItems')}</Text>
               </View>
             )}
           </Card>
@@ -392,7 +393,7 @@ export function ExpenseDetailScreen() {
         {linkedAssets.length > 0 && (
           <View className="px-5 mt-5">
             <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Cost Breakdown by Asset
+              {t('expense.costBreakdown')}
             </Text>
             <Card variant="default" padding="none" className={isDark ? 'bg-slate-800' : ''}>
               {linkedAssets.map((linkedAsset, index) => {
@@ -440,7 +441,7 @@ export function ExpenseDetailScreen() {
               {/* Total Row */}
               <View className={`flex-row items-center justify-between px-4 py-3 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
                 <Text className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  Total allocated to assets
+                  {t('expense.totalAllocated')}
                 </Text>
                 <Text className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                   {formatCurrency(linkedAssets.reduce((sum, a) => sum + a.amount, 0))}
@@ -454,7 +455,7 @@ export function ExpenseDetailScreen() {
         {expense.receiptUri && (
           <View className="px-5 mt-5">
             <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Receipt
+              {t('expense.receipt')}
             </Text>
             <TouchableOpacity
               onPress={handleViewReceipt}
@@ -466,8 +467,8 @@ export function ExpenseDetailScreen() {
                     <Receipt size={24} color={COLORS.categories.document} />
                   </View>
                   <View className="flex-1 ml-3">
-                    <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>View Receipt</Text>
-                    <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tap to open full image</Text>
+                    <Text className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('expense.viewReceipt')}</Text>
+                    <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('expense.tapToOpen')}</Text>
                   </View>
                   <ExternalLink size={20} color={COLORS.primary[600]} />
                 </View>
@@ -481,7 +482,7 @@ export function ExpenseDetailScreen() {
           <View className="flex-row items-center justify-center py-3">
             <Clock size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
             <Text className={`text-sm ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Added {formatDate(expense.createdAt)}
+              {t('common.added')} {formatDate(expense.createdAt)}
             </Text>
           </View>
         </View>

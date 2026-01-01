@@ -26,7 +26,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { workerRepository } from '../../services/database';
 import { Button, Input, IconButton, TextArea } from '../../components/ui';
 import { COLORS, WORKER_SPECIALTIES } from '../../constants/theme';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type EditWorkerRouteProp = RouteProp<RootStackParamList, 'EditWorker'>;
@@ -36,6 +36,7 @@ export function EditWorkerScreen() {
   const route = useRoute<EditWorkerRouteProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const { workerId } = route.params;
 
   const [name, setName] = useState('');
@@ -68,7 +69,7 @@ export function EditWorkerScreen() {
       }
     } catch (error) {
       console.error('Failed to load worker:', error);
-      Alert.alert('Error', 'Failed to load worker');
+      Alert.alert(t('common.error'), t('worker.alerts.loadError'));
       navigation.goBack();
     } finally {
       setInitialLoading(false);
@@ -78,7 +79,7 @@ export function EditWorkerScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant access to your photo library');
+      Alert.alert(t('common.permissionRequired'), t('permissions.photosDescription'));
       return;
     }
 
@@ -108,12 +109,12 @@ export function EditWorkerScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Please enter a name');
+      Alert.alert(t('common.required'), t('worker.alerts.nameRequired'));
       return;
     }
 
     if (selectedSpecialties.length === 0) {
-      Alert.alert('Required', 'Please select at least one specialty');
+      Alert.alert(t('common.required'), t('worker.alerts.specialtyRequired'));
       return;
     }
 
@@ -134,7 +135,7 @@ export function EditWorkerScreen() {
       navigation.goBack();
     } catch (error) {
       console.error('Failed to update worker:', error);
-      Alert.alert('Error', 'Failed to update worker. Please try again.');
+      Alert.alert(t('common.error'), t('worker.alerts.updateError'));
     } finally {
       setLoading(false);
     }
@@ -143,7 +144,7 @@ export function EditWorkerScreen() {
   if (initialLoading) {
     return (
       <View className={`flex-1 items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>Loading...</Text>
+        <Text className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -157,9 +158,9 @@ export function EditWorkerScreen() {
           variant="ghost"
           onPress={() => navigation.goBack()}
         />
-        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Worker</Text>
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('worker.edit')}</Text>
         <Button
-          title="Save"
+          title={t('common.save')}
           variant="primary"
           size="sm"
           loading={loading}
@@ -202,15 +203,15 @@ export function EditWorkerScreen() {
               activeOpacity={0.7}
             >
               <Text className="text-sm font-medium text-primary-600">
-                {imageUri ? 'Change Photo' : 'Add Photo'}
+                {imageUri ? t('worker.changePhoto') : t('worker.addPhoto')}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Name */}
           <Input
-            label="Name"
-            placeholder="Full name"
+            label={t('worker.name')}
+            placeholder={t('worker.namePlaceholder')}
             value={name}
             onChangeText={setName}
             containerClassName="mb-4"
@@ -220,13 +221,13 @@ export function EditWorkerScreen() {
           {/* Contact Info */}
           <View className={`rounded-2xl p-4 mb-4 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
             <Text className={`text-sm font-semibold mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Contact Information
+              {t('worker.contactInfo')}
             </Text>
 
             <View className={`flex-row items-center rounded-xl px-4 py-3 border mb-3 ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
               <Phone size={18} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Input
-                placeholder="Phone number"
+                placeholder={t('worker.phonePlaceholder')}
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -238,7 +239,7 @@ export function EditWorkerScreen() {
             <View className={`flex-row items-center rounded-xl px-4 py-3 border mb-3 ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
               <Mail size={18} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Input
-                placeholder="Email address"
+                placeholder={t('worker.emailPlaceholder')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -251,7 +252,7 @@ export function EditWorkerScreen() {
             <View className={`flex-row items-center rounded-xl px-4 py-3 border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
               <Building2 size={18} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
               <Input
-                placeholder="Company name (optional)"
+                placeholder={t('worker.companyPlaceholder')}
                 value={company}
                 onChangeText={setCompany}
                 containerClassName="flex-1 ml-3"
@@ -263,7 +264,7 @@ export function EditWorkerScreen() {
           {/* Specialties */}
           <View className="mb-4">
             <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Specialties <Text className="text-red-500">*</Text>
+              {t('worker.specialty')} <Text className="text-red-500">*</Text>
             </Text>
             <View className="flex-row flex-wrap">
               {WORKER_SPECIALTIES.map((specialty) => {
@@ -298,7 +299,7 @@ export function EditWorkerScreen() {
           {/* Rating */}
           <View className="mb-4">
             <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              Rating
+              {t('worker.rating')}
             </Text>
             <View className="flex-row gap-2">
               {[1, 2, 3, 4, 5].map((value) => (
@@ -330,8 +331,8 @@ export function EditWorkerScreen() {
 
           {/* Notes */}
           <TextArea
-            label="Notes"
-            placeholder="Add any additional notes about this worker..."
+            label={t('worker.notes')}
+            placeholder={t('worker.notesPlaceholder')}
             value={notes}
             onChangeText={setNotes}
             rows={3}

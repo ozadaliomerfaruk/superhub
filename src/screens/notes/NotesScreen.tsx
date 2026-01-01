@@ -30,7 +30,7 @@ import { notesRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card, EmptyState, FAB, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
 import { formatRelativeDate } from '../../utils/date';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type NotesScreenRouteProp = RouteProp<RootStackParamList, 'Notes'>;
@@ -40,6 +40,7 @@ export function NotesScreen() {
   const route = useRoute<NotesScreenRouteProp>();
   const { propertyId } = route.params;
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -95,7 +96,7 @@ export function NotesScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to create note:', error);
-      Alert.alert('Error', 'Failed to create note');
+      Alert.alert(t('common.error'), t('notes.alerts.createFailed'));
     }
   };
 
@@ -112,7 +113,7 @@ export function NotesScreen() {
       loadData();
     } catch (error) {
       console.error('Failed to update note:', error);
-      Alert.alert('Error', 'Failed to update note');
+      Alert.alert(t('common.error'), t('notes.alerts.updateFailed'));
     }
   };
 
@@ -128,12 +129,12 @@ export function NotesScreen() {
 
   const handleDeleteNote = (note: Note) => {
     Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
+      t('notes.deleteTitle'),
+      t('notes.deleteMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -142,7 +143,7 @@ export function NotesScreen() {
               loadData();
             } catch (error) {
               console.error('Failed to delete note:', error);
-              Alert.alert('Error', 'Failed to delete note');
+              Alert.alert(t('common.error'), t('notes.alerts.deleteFailed'));
             }
           },
         },
@@ -166,7 +167,7 @@ export function NotesScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Notes"
+        title={t('notes.title')}
         subtitle={property?.name}
         showBack
         onBack={() => navigation.goBack()}
@@ -179,7 +180,7 @@ export function NotesScreen() {
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search notes..."
+            placeholder={t('notes.searchPlaceholder')}
             placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
             className={`flex-1 ml-2 text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
           />
@@ -214,7 +215,7 @@ export function NotesScreen() {
                 <TextInput
                   value={newNoteContent}
                   onChangeText={setNewNoteContent}
-                  placeholder="Write your note..."
+                  placeholder={t('notes.writeNote')}
                   placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
                   multiline
                   autoFocus
@@ -230,7 +231,7 @@ export function NotesScreen() {
                     className="px-4 py-2 rounded-lg"
                     activeOpacity={0.7}
                   >
-                    <Text className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Cancel</Text>
+                    <Text className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleAddNote}
@@ -238,7 +239,7 @@ export function NotesScreen() {
                     className={`px-4 py-2 rounded-lg ${newNoteContent.trim() ? 'bg-primary-600' : isDark ? 'bg-slate-700' : 'bg-slate-200'}`}
                     activeOpacity={0.7}
                   >
-                    <Text className={`font-medium ${newNoteContent.trim() ? 'text-white' : isDark ? 'text-slate-500' : 'text-slate-400'}`}>Save</Text>
+                    <Text className={`font-medium ${newNoteContent.trim() ? 'text-white' : isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('common.save')}</Text>
                   </TouchableOpacity>
                 </View>
               </Card>
@@ -249,8 +250,8 @@ export function NotesScreen() {
             <View className="flex-1 pt-16 px-8">
               <EmptyState
                 icon={<StickyNote size={44} color={COLORS.secondary[500]} />}
-                title="No notes yet"
-                description="Add notes to keep track of important information about your property."
+                title={t('notes.noNotes')}
+                description={t('notes.noNotesDescription')}
               />
             </View>
           ) : (
@@ -261,7 +262,7 @@ export function NotesScreen() {
                   <View className="flex-row items-center mb-3">
                     <Pin size={14} color={COLORS.secondary[500]} />
                     <Text className={`text-xs font-semibold uppercase tracking-wider ml-1.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                      Pinned
+                      {t('notes.pinned')}
                     </Text>
                   </View>
                   <View className="gap-3">
@@ -289,7 +290,7 @@ export function NotesScreen() {
                 <View>
                   {pinnedNotes.length > 0 && (
                     <Text className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                      Other Notes
+                      {t('notes.otherNotes')}
                     </Text>
                   )}
                   <View className="gap-3">
