@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HomeTrack App Icon Generator</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #1e293b;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: white;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        canvas {
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #22c55e;
+            color: white;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #16a34a;
+        }
+        .info {
+            margin-top: 20px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>HomeTrack App Icon</h1>
+    <canvas id="iconCanvas" width="1024" height="1024"></canvas>
+    <div class="buttons">
+        <button onclick="downloadIcon(1024)">Download 1024x1024 (iOS)</button>
+        <button onclick="downloadIcon(512)">Download 512x512</button>
+        <button onclick="downloadIcon(192)">Download 192x192 (Android)</button>
+    </div>
+    <p class="info">Right-click on the image to save, or use the buttons above.</p>
+
+    <script>
+        const canvas = document.getElementById('iconCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1024;
+
+        function drawIcon(ctx, size) {
+            const scale = size / 1024;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // Background gradient
+            const bgGradient = ctx.createLinearGradient(0, 0, size, size);
+            bgGradient.addColorStop(0, '#22c55e');
+            bgGradient.addColorStop(1, '#16a34a');
+
+            // Draw rounded rectangle background
+            ctx.beginPath();
+            const radius = 180 * scale;
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fillStyle = bgGradient;
+            ctx.fill();
+
+            // Save context for clipping
+            ctx.save();
+            ctx.clip();
+
+            // House settings
+            const centerX = size / 2;
+            const houseColor = 'white';
+
+            // Draw roof
+            ctx.beginPath();
+            ctx.moveTo(centerX, 160 * scale);  // Peak
+            ctx.lineTo(860 * scale, 440 * scale);  // Right bottom
+            ctx.lineTo(820 * scale, 490 * scale);  // Right inner
+            ctx.lineTo(centerX, 280 * scale);  // Inner peak
+            ctx.lineTo(204 * scale, 490 * scale);  // Left inner
+            ctx.lineTo(164 * scale, 440 * scale);  // Left bottom
+            ctx.closePath();
+            ctx.fillStyle = houseColor;
+            ctx.fill();
+
+            // House body
+            ctx.beginPath();
+            const bodyX = 250 * scale;
+            const bodyY = 420 * scale;
+            const bodyW = 524 * scale;
+            const bodyH = 420 * scale;
+            const bodyR = 24 * scale;
+            ctx.moveTo(bodyX + bodyR, bodyY);
+            ctx.lineTo(bodyX + bodyW - bodyR, bodyY);
+            ctx.quadraticCurveTo(bodyX + bodyW, bodyY, bodyX + bodyW, bodyY + bodyR);
+            ctx.lineTo(bodyX + bodyW, bodyY + bodyH);
+            ctx.lineTo(bodyX, bodyY + bodyH);
+            ctx.lineTo(bodyX, bodyY + bodyR);
+            ctx.quadraticCurveTo(bodyX, bodyY, bodyX + bodyR, bodyY);
+            ctx.closePath();
+            ctx.fillStyle = houseColor;
+            ctx.fill();
+
+            // Chimney
+            ctx.beginPath();
+            const chimX = 680 * scale;
+            const chimY = 240 * scale;
+            const chimW = 65 * scale;
+            const chimH = 140 * scale;
+            const chimR = 8 * scale;
+            ctx.moveTo(chimX + chimR, chimY);
+            ctx.lineTo(chimX + chimW - chimR, chimY);
+            ctx.quadraticCurveTo(chimX + chimW, chimY, chimX + chimW, chimY + chimR);
+            ctx.lineTo(chimX + chimW, chimY + chimH);
+            ctx.lineTo(chimX, chimY + chimH);
+            ctx.lineTo(chimX, chimY + chimR);
+            ctx.quadraticCurveTo(chimX, chimY, chimX + chimR, chimY);
+            ctx.closePath();
+            ctx.fillStyle = houseColor;
+            ctx.fill();
+
+            // Door
+            ctx.beginPath();
+            const doorX = 430 * scale;
+            const doorY = 540 * scale;
+            const doorW = 164 * scale;
+            const doorH = 300 * scale;
+            const doorR = 16 * scale;
+            ctx.moveTo(doorX + doorR, doorY);
+            ctx.lineTo(doorX + doorW - doorR, doorY);
+            ctx.quadraticCurveTo(doorX + doorW, doorY, doorX + doorW, doorY + doorR);
+            ctx.lineTo(doorX + doorW, doorY + doorH);
+            ctx.lineTo(doorX, doorY + doorH);
+            ctx.lineTo(doorX, doorY + doorR);
+            ctx.quadraticCurveTo(doorX, doorY, doorX + doorR, doorY);
+            ctx.closePath();
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+
+            // Door knob
+            ctx.beginPath();
+            ctx.arc(560 * scale, 700 * scale, 14 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = houseColor;
+            ctx.fill();
+
+            // Left window
+            drawWindow(ctx, 295 * scale, 490 * scale, 115 * scale, 115 * scale, 12 * scale);
+
+            // Right window
+            drawWindow(ctx, 614 * scale, 490 * scale, 115 * scale, 115 * scale, 12 * scale);
+
+            // Checkmark badge
+            ctx.beginPath();
+            ctx.arc(790 * scale, 280 * scale, 105 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = houseColor;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(790 * scale, 280 * scale, 82 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+
+            // Checkmark
+            ctx.beginPath();
+            ctx.moveTo(745 * scale, 285 * scale);
+            ctx.lineTo(775 * scale, 318 * scale);
+            ctx.lineTo(840 * scale, 248 * scale);
+            ctx.strokeStyle = houseColor;
+            ctx.lineWidth = 22 * scale;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawWindow(ctx, x, y, w, h, r) {
+            // Window background
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+
+            // Window cross
+            ctx.beginPath();
+            ctx.moveTo(x + w/2, y);
+            ctx.lineTo(x + w/2, y + h);
+            ctx.moveTo(x, y + h/2);
+            ctx.lineTo(x + w, y + h/2);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+        }
+
+        // Initial draw
+        drawIcon(ctx, size);
+
+        function downloadIcon(downloadSize) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = downloadSize;
+            tempCanvas.height = downloadSize;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            drawIcon(tempCtx, downloadSize);
+
+            const link = document.createElement('a');
+            link.download = `hometrack-icon-${downloadSize}x${downloadSize}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

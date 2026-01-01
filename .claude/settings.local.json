@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest . --template expo-template-blank-typescript)",
+      "Bash(npx create-expo-app@latest . --template expo-template-blank-typescript --yes)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx eas:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd //c \"taskkill /PID 25040 /F\")",
+      "Bash(cmd //c \"taskkill /PID 28020 /F\")",
+      "Bash(cmd //c \"taskkill /PID 25632 /F\")",
+      "Bash(npm ls:*)",
+      "Bash(grep:*)",
+      "Bash(dir /s \"C:\\Users\\ozada\\ev-takip-v3\\src\")",
+      "Bash(dir \"C:\\Users\\ozada\\ev-takip-v3\\src\" /s /b)",
+      "Bash(dir \"C:\\Users\\ozada\\ev-takip-v3\\src\")",
+      "Bash(npx expo start)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx expo start:*)",
+      "Bash(find:*)",
+      "Bash(dir /s C:Usersozadaev-takip-v3src)",
+      "Bash(dir \"C:\\Users\\ozada\\apps\\ev-takip-v3\\src\\services\")",
+      "Bash(dir:*)"
+    ]
+  }
+}

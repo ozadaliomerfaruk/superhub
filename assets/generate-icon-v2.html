@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HomeTrack App Icon Generator - Multiple Concepts</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+            background: #0f172a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: white;
+        }
+        h1 {
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+        .icons-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            max-width: 1200px;
+        }
+        .icon-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .icon-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .icon-card h3 {
+            margin: 20px 0 10px;
+            font-size: 18px;
+        }
+        .icon-card p {
+            color: #94a3b8;
+            font-size: 13px;
+            text-align: center;
+            margin: 0 0 20px;
+            line-height: 1.5;
+        }
+        canvas {
+            border-radius: 56px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #22c55e;
+            color: white;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #16a34a;
+        }
+    </style>
+</head>
+<body>
+    <h1>HomeTrack Icon Concepts</h1>
+    <p class="subtitle">Click download on your favorite design (1024x1024 for iOS App Store)</p>
+
+    <div class="icons-grid">
+        <!-- Concept 1: Minimal House with Shield -->
+        <div class="icon-card">
+            <canvas id="concept1" width="256" height="256"></canvas>
+            <h3>Shield Home</h3>
+            <p>Protected home inside a shield shape - emphasizes security and care</p>
+            <button onclick="downloadIcon('concept1', drawConcept1)">Download</button>
+        </div>
+
+        <!-- Concept 2: Abstract Home + Gear -->
+        <div class="icon-card">
+            <canvas id="concept2" width="256" height="256"></canvas>
+            <h3>Smart Maintenance</h3>
+            <p>Home with gear element - represents smart home management</p>
+            <button onclick="downloadIcon('concept2', drawConcept2)">Download</button>
+        </div>
+
+        <!-- Concept 3: Home with Clipboard -->
+        <div class="icon-card">
+            <canvas id="concept3" width="256" height="256"></canvas>
+            <h3>Home Tracker</h3>
+            <p>House with checklist - emphasizes tracking and organization</p>
+            <button onclick="downloadIcon('concept3', drawConcept3)">Download</button>
+        </div>
+
+        <!-- Concept 4: Minimal Line Art -->
+        <div class="icon-card">
+            <canvas id="concept4" width="256" height="256"></canvas>
+            <h3>Modern Minimal</h3>
+            <p>Clean line-art style - modern and elegant</p>
+            <button onclick="downloadIcon('concept4', drawConcept4)">Download</button>
+        </div>
+
+        <!-- Concept 5: Home with Heart -->
+        <div class="icon-card">
+            <canvas id="concept5" width="256" height="256"></canvas>
+            <h3>Home Care</h3>
+            <p>House with heart - caring for your home</p>
+            <button onclick="downloadIcon('concept5', drawConcept5)">Download</button>
+        </div>
+
+        <!-- Concept 6: Isometric Home -->
+        <div class="icon-card">
+            <canvas id="concept6" width="256" height="256"></canvas>
+            <h3>3D Home</h3>
+            <p>Isometric style - modern and distinctive</p>
+            <button onclick="downloadIcon('concept6', drawConcept6)">Download</button>
+        </div>
+    </div>
+
+    <script>
+        // Helper function for rounded rectangles
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        // Concept 1: Shield Home
+        function drawConcept1(ctx, size) {
+            const s = size / 1024;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#22c55e');
+            gradient.addColorStop(1, '#15803d');
+            roundRect(ctx, 0, 0, size, size, 180 * s);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Shield shape
+            ctx.beginPath();
+            ctx.moveTo(512 * s, 140 * s);
+            ctx.bezierCurveTo(680 * s, 140 * s, 820 * s, 200 * s, 820 * s, 280 * s);
+            ctx.lineTo(820 * s, 520 * s);
+            ctx.bezierCurveTo(820 * s, 700 * s, 680 * s, 820 * s, 512 * s, 900 * s);
+            ctx.bezierCurveTo(344 * s, 820 * s, 204 * s, 700 * s, 204 * s, 520 * s);
+            ctx.lineTo(204 * s, 280 * s);
+            ctx.bezierCurveTo(204 * s, 200 * s, 344 * s, 140 * s, 512 * s, 140 * s);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            // House inside shield
+            ctx.fillStyle = '#22c55e';
+            // Roof
+            ctx.beginPath();
+            ctx.moveTo(512 * s, 280 * s);
+            ctx.lineTo(700 * s, 440 * s);
+            ctx.lineTo(324 * s, 440 * s);
+            ctx.closePath();
+            ctx.fill();
+
+            // Body
+            roundRect(ctx, 360 * s, 440 * s, 304 * s, 260 * s, 8 * s);
+            ctx.fill();
+
+            // Door
+            ctx.fillStyle = 'white';
+            roundRect(ctx, 470 * s, 520 * s, 84 * s, 180 * s, 8 * s);
+            ctx.fill();
+
+            // Windows
+            ctx.fillStyle = 'white';
+            roundRect(ctx, 380 * s, 480 * s, 70 * s, 70 * s, 6 * s);
+            ctx.fill();
+            roundRect(ctx, 574 * s, 480 * s, 70 * s, 70 * s, 6 * s);
+            ctx.fill();
+        }
+
+        // Concept 2: Smart Maintenance (Home + Gear)
+        function drawConcept2(ctx, size) {
+            const s = size / 1024;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#10b981');
+            gradient.addColorStop(1, '#059669');
+            roundRect(ctx, 0, 0, size, size, 180 * s);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // House
+            ctx.fillStyle = 'white';
+            // Roof
+            ctx.beginPath();
+            ctx.moveTo(420 * s, 200 * s);
+            ctx.lineTo(750 * s, 450 * s);
+            ctx.lineTo(90 * s, 450 * s);
+            ctx.closePath();
+            ctx.fill();
+
+            // Body
+            roundRect(ctx, 150 * s, 450 * s, 540 * s, 380 * s, 16 * s);
+            ctx.fill();
+
+            // Door
+            ctx.fillStyle = '#10b981';
+            roundRect(ctx, 350 * s, 560 * s, 140 * s, 270 * s, 12 * s);
+            ctx.fill();
+
+            // Windows
+            roundRect(ctx, 190 * s, 510 * s, 120 * s, 100 * s, 8 * s);
+            ctx.fill();
+            roundRect(ctx, 530 * s, 510 * s, 120 * s, 100 * s, 8 * s);
+            ctx.fill();
+
+            // Gear in bottom right
+            ctx.save();
+            ctx.translate(780 * s, 780 * s);
+            drawGear(ctx, 180 * s, 'white', '#10b981');
+            ctx.restore();
+        }
+
+        function drawGear(ctx, radius, color, innerColor) {
+            const teeth = 8;
+            const innerRadius = radius * 0.6;
+            const outerRadius = radius;
+
+            ctx.beginPath();
+            for (let i = 0; i < teeth * 2; i++) {
+                const angle = (i * Math.PI) / teeth;
+                const r = i % 2 === 0 ? outerRadius : innerRadius;
+                const x = Math.cos(angle) * r;
+                const y = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            // Inner circle
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = innerColor;
+            ctx.fill();
+        }
+
+        // Concept 3: Home Tracker (Clipboard)
+        function drawConcept3(ctx, size) {
+            const s = size / 1024;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#34d399');
+            gradient.addColorStop(1, '#10b981');
+            roundRect(ctx, 0, 0, size, size, 180 * s);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Clipboard
+            ctx.fillStyle = 'white';
+            roundRect(ctx, 280 * s, 180 * s, 464 * s, 680 * s, 32 * s);
+            ctx.fill();
+
+            // Clipboard clip
+            roundRect(ctx, 420 * s, 140 * s, 184 * s, 80 * s, 16 * s);
+            ctx.fill();
+            ctx.fillStyle = '#34d399';
+            roundRect(ctx, 440 * s, 160 * s, 144 * s, 40 * s, 8 * s);
+            ctx.fill();
+
+            // House icon on clipboard
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.moveTo(512 * s, 280 * s);
+            ctx.lineTo(660 * s, 400 * s);
+            ctx.lineTo(364 * s, 400 * s);
+            ctx.closePath();
+            ctx.fill();
+
+            roundRect(ctx, 390 * s, 400 * s, 244 * s, 180 * s, 8 * s);
+            ctx.fill();
+
+            // Checklist lines
+            ctx.fillStyle = '#d1fae5';
+            roundRect(ctx, 340 * s, 620 * s, 344 * s, 24 * s, 4 * s);
+            ctx.fill();
+            roundRect(ctx, 340 * s, 680 * s, 280 * s, 24 * s, 4 * s);
+            ctx.fill();
+            roundRect(ctx, 340 * s, 740 * s, 320 * s, 24 * s, 4 * s);
+            ctx.fill();
+
+            // Checkmarks
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 16 * s;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            [620, 680, 740].forEach(y => {
+                ctx.beginPath();
+                ctx.moveTo(310 * s, (y + 12) * s);
+                ctx.lineTo(320 * s, (y + 20) * s);
+                ctx.lineTo(335 * s, (y + 4) * s);
+                ctx.stroke();
+            });
+        }
+
+        // Concept 4: Modern Minimal
+        function drawConcept4(ctx, size) {
+            const s = size / 1024;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#4ade80');
+            gradient.addColorStop(1, '#22c55e');
+            roundRect(ctx, 0, 0, size, size, 180 * s);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // House outline
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 48 * s;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Roof
+            ctx.beginPath();
+            ctx.moveTo(180 * s, 480 * s);
+            ctx.lineTo(512 * s, 200 * s);
+            ctx.lineTo(844 * s, 480 * s);
+            ctx.stroke();
+
+            // Walls
+            ctx.beginPath();
+            ctx.moveTo(260 * s, 440 * s);
+            ctx.lineTo(260 * s, 780 * s);
+            ctx.lineTo(764 * s, 780 * s);
+            ctx.lineTo(764 * s, 440 * s);
+            ctx.stroke();
+
+            // Door
+            ctx.fillStyle = 'white';
+            roundRect(ctx, 440 * s, 580 * s, 144 * s, 200 * s, 16 * s);
+            ctx.fill();
+
+            // Door inner
+            ctx.fillStyle = '#22c55e';
+            roundRect(ctx, 464 * s, 604 * s, 96 * s, 152 * s, 8 * s);
+            ctx.fill();
+        }
+
+        // Concept 5: Home Care (Heart)
+        function drawConcept5(ctx, size) {
+            const s = size / 1024;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#22c55e');
+            gradient.addColorStop(1, '#16a34a');
+            roundRect(ctx, 0, 0, size, size, 180 * s);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // House
+            ctx.fillStyle = 'white';
+            // Roof
+            ctx.beginPath();
+            ctx.moveTo(512 * s, 160 * s);
+            ctx.lineTo(840 * s, 420 * s);
+            ctx.lineTo(184 * s, 420 * s);
+            ctx.closePath();
+            ctx.fill();
+
+            // Body
+            roundRect(ctx, 240 * s, 420 * s, 544 * s, 420 * s, 16 * s);
+            ctx.fill();
+
+            // Heart in center
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            const hx = 512 * s, hy = 580 * s, hs = 120 * s;
+            ctx.moveTo(hx, hy + hs * 0.8);
+            ctx.bezierCurveTo(hx - hs * 1.5, hy + hs * 0.2, hx - hs * 1.5, hy - hs * 0.8, hx, hy - hs * 0.3);
+            ctx.bezierCurveTo(hx + hs * 1.5, hy - hs * 0.8, hx + hs * 1.5, hy + hs * 0.2, hx, hy + hs * 0.8);
+            ctx.fill();
+
+            // Windows
+            ctx.fillStyle = '#22c55e';
+            roundRect(ctx, 280 * s, 480 * s, 100 * s, 100 * s, 10 * s);
+            ctx.fill();
+            roundRect(ctx, 644 * s, 480 * s, 100 * s, 100 * s, 10 * s);
+            ctx.fill();
+
+            // Window crosses
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 8 * s;
+            [330, 694].forEach(wx => {
+                ctx.beginPath();
+                ctx.moveTo(wx * s, 480 * s);
+                ctx.lineTo(wx * s, 580 * s);
+                ctx.moveTo((wx - 50) * s, 530 * s);
+                ctx.lineTo((wx + 50) * s, 530 * s);
+                ctx.stroke();
+            });
+        }
+
+        // Concept 6: Isometric Home
+        function drawConcept6(ctx, size) {
+            const s = size / 1024;
+
+            // Background
+            const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size * 0.7);
+            gradient.addColorStop(0, '#34d399');
+            gradient.addColorStop(1, '#059669');
+            roundRect(ctx, 0, 0, size, size, 180 * s);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            const cx = 512 * s;
+            const cy = 540 * s;
+
+            // Left wall
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx - 280 * s, cy - 160 * s);
+            ctx.lineTo(cx - 280 * s, cy + 200 * s);
+            ctx.lineTo(cx, cy + 360 * s);
+            ctx.closePath();
+            ctx.fillStyle = '#f0fdf4';
+            ctx.fill();
+
+            // Right wall
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + 280 * s, cy - 160 * s);
+            ctx.lineTo(cx + 280 * s, cy + 200 * s);
+            ctx.lineTo(cx, cy + 360 * s);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            // Left roof
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 280 * s);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(cx - 280 * s, cy - 160 * s);
+            ctx.lineTo(cx - 280 * s, cy - 280 * s);
+            ctx.closePath();
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+
+            // Right roof
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 280 * s);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(cx + 280 * s, cy - 160 * s);
+            ctx.lineTo(cx + 280 * s, cy - 280 * s);
+            ctx.closePath();
+            ctx.fillStyle = '#16a34a';
+            ctx.fill();
+
+            // Roof peak
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 400 * s);
+            ctx.lineTo(cx - 280 * s, cy - 280 * s);
+            ctx.lineTo(cx, cy - 280 * s);
+            ctx.closePath();
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 400 * s);
+            ctx.lineTo(cx + 280 * s, cy - 280 * s);
+            ctx.lineTo(cx, cy - 280 * s);
+            ctx.closePath();
+            ctx.fillStyle = '#16a34a';
+            ctx.fill();
+
+            // Door on right wall
+            ctx.fillStyle = '#059669';
+            ctx.beginPath();
+            ctx.moveTo(cx + 40 * s, cy + 80 * s);
+            ctx.lineTo(cx + 140 * s, cy + 20 * s);
+            ctx.lineTo(cx + 140 * s, cy + 220 * s);
+            ctx.lineTo(cx + 40 * s, cy + 280 * s);
+            ctx.closePath();
+            ctx.fill();
+
+            // Window on left wall
+            ctx.fillStyle = '#059669';
+            ctx.beginPath();
+            ctx.moveTo(cx - 200 * s, cy - 60 * s);
+            ctx.lineTo(cx - 100 * s, cy - 120 * s);
+            ctx.lineTo(cx - 100 * s, cy + 20 * s);
+            ctx.lineTo(cx - 200 * s, cy + 80 * s);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Draw all concepts on load
+        const concepts = [
+            { id: 'concept1', draw: drawConcept1 },
+            { id: 'concept2', draw: drawConcept2 },
+            { id: 'concept3', draw: drawConcept3 },
+            { id: 'concept4', draw: drawConcept4 },
+            { id: 'concept5', draw: drawConcept5 },
+            { id: 'concept6', draw: drawConcept6 },
+        ];
+
+        concepts.forEach(({ id, draw }) => {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            draw(ctx, 256);
+        });
+
+        function downloadIcon(conceptId, drawFn) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 1024;
+            tempCanvas.height = 1024;
+            const tempCtx = tempCanvas.getContext('2d');
+            drawFn(tempCtx, 1024);
+
+            const link = document.createElement('a');
+            link.download = `hometrack-${conceptId}-1024x1024.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

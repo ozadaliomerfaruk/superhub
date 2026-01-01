@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Background with rounded corners -->
+  <rect width="1024" height="1024" rx="180" fill="#22c55e"/>
+
+  <!-- Subtle gradient overlay -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="houseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0fdf4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="180" fill="url(#bgGradient)"/>
+
+  <!-- House shape - roof -->
+  <path d="M512 180 L820 420 L820 460 L512 260 L204 460 L204 420 Z" fill="white"/>
+
+  <!-- House body -->
+  <rect x="260" y="400" width="504" height="380" rx="20" fill="white"/>
+
+  <!-- Roof peak -->
+  <path d="M512 180 L860 450 L820 490 L512 260 L204 490 L164 450 Z" fill="white"/>
+
+  <!-- Chimney -->
+  <rect x="680" y="240" width="60" height="120" rx="8" fill="white"/>
+
+  <!-- Door -->
+  <rect x="440" y="520" width="144" height="220" rx="12" fill="#22c55e"/>
+  <circle cx="555" cy="640" r="12" fill="white"/>
+
+  <!-- Windows -->
+  <rect x="300" y="480" width="100" height="100" rx="10" fill="#22c55e"/>
+  <rect x="624" y="480" width="100" height="100" rx="10" fill="#22c55e"/>
+
+  <!-- Window cross lines -->
+  <line x1="350" y1="480" x2="350" y2="580" stroke="white" stroke-width="6"/>
+  <line x1="300" y1="530" x2="400" y2="530" stroke="white" stroke-width="6"/>
+  <line x1="674" y1="480" x2="674" y2="580" stroke="white" stroke-width="6"/>
+  <line x1="624" y1="530" x2="724" y2="530" stroke="white" stroke-width="6"/>
+
+  <!-- Checkmark badge -->
+  <circle cx="780" cy="280" r="100" fill="white"/>
+  <circle cx="780" cy="280" r="80" fill="#22c55e"/>
+  <path d="M735 280 L765 310 L830 245" fill="none" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
