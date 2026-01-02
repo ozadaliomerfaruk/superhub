@@ -32,6 +32,13 @@ function mapRowToStorageBox(row: StorageBoxRow): StorageBox {
 }
 
 export const storageBoxRepository = {
+  async getAll(): Promise<StorageBox[]> {
+    const rows = await queryAll<StorageBoxRow>(
+      'SELECT * FROM storage_boxes ORDER BY name ASC'
+    );
+    return rows.map(mapRowToStorageBox);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<StorageBox[]> {
     const rows = await queryAll<StorageBoxRow>(
       'SELECT * FROM storage_boxes WHERE property_id = ? ORDER BY name ASC',

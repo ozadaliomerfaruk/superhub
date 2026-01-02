@@ -227,6 +227,7 @@ import {
   emergencyRepository,
   recurringTemplateRepository,
   notesRepository,
+  withTransaction,
 } from '../database';
 import { getCurrentISODate } from '../../utils/date';
 
@@ -459,8 +460,11 @@ class BackupService {
         };
       }
 
-      // Import data (merge with existing)
-      await this.importDataFromBackup(backupData.data);
+      // Import data within a transaction for data consistency
+      // If any import fails, all changes are rolled back
+      await withTransaction(async () => {
+        await this.importDataFromBackup(backupData.data);
+      });
 
       return { success: true, stats: backupData.manifest.stats };
     } catch (error) {
@@ -838,129 +842,57 @@ class BackupService {
     }
   }
 
-  // Helper methods to get all data
+  // Helper methods to get all data - using getAll() methods to avoid N+1 queries
   private async getAllProperties() {
     return propertyRepository.getAll();
   }
 
   private async getAllRooms() {
-    const properties = await propertyRepository.getAll();
-    const allRooms = [];
-    for (const property of properties) {
-      const rooms = await roomRepository.getByPropertyId(property.id);
-      allRooms.push(...rooms);
-    }
-    return allRooms;
+    return roomRepository.getAll();
   }
 
   private async getAllAssets() {
-    const properties = await propertyRepository.getAll();
-    const allAssets = [];
-    for (const property of properties) {
-      const assets = await assetRepository.getByPropertyId(property.id);
-      allAssets.push(...assets);
-    }
-    return allAssets;
+    return assetRepository.getAll();
   }
 
   private async getAllExpenses() {
-    const properties = await propertyRepository.getAll();
-    const allExpenses = [];
-    for (const property of properties) {
-      const expenses = await expenseRepository.getByPropertyId(property.id);
-      allExpenses.push(...expenses);
-    }
-    return allExpenses;
+    return expenseRepository.getAll();
   }
 
   private async getAllMaintenanceTasks() {
-    const properties = await propertyRepository.getAll();
-    const allTasks = [];
-    for (const property of properties) {
-      const tasks = await maintenanceRepository.getByPropertyId(property.id);
-      allTasks.push(...tasks);
-    }
-    return allTasks;
+    return maintenanceRepository.getAll();
   }
 
   private async getAllPaintCodes() {
-    const properties = await propertyRepository.getAll();
-    const allCodes = [];
-    for (const property of properties) {
-      const codes = await paintCodeRepository.getByPropertyId(property.id);
-      allCodes.push(...codes);
-    }
-    return allCodes;
+    return paintCodeRepository.getAll();
   }
 
   private async getAllMeasurements() {
-    const properties = await propertyRepository.getAll();
-    const allMeasurements = [];
-    for (const property of properties) {
-      const measurements = await measurementRepository.getByPropertyId(property.id);
-      allMeasurements.push(...measurements);
-    }
-    return allMeasurements;
+    return measurementRepository.getAll();
   }
 
   private async getAllStorageBoxes() {
-    const properties = await propertyRepository.getAll();
-    const allBoxes = [];
-    for (const property of properties) {
-      const boxes = await storageBoxRepository.getByPropertyId(property.id);
-      allBoxes.push(...boxes);
-    }
-    return allBoxes;
+    return storageBoxRepository.getAll();
   }
 
   private async getAllWifiNetworks() {
-    const properties = await propertyRepository.getAll();
-    const allNetworks = [];
-    for (const property of properties) {
-      const networks = await wifiInfoRepository.getByPropertyId(property.id);
-      allNetworks.push(...networks);
-    }
-    return allNetworks;
+    return wifiInfoRepository.getAll();
   }
 
   private async getAllRenovations() {
-    const properties = await propertyRepository.getAll();
-    const allRenovations = [];
-    for (const property of properties) {
-      const renovations = await renovationRepository.getByPropertyId(property.id);
-      allRenovations.push(...renovations);
-    }
-    return allRenovations;
+    return renovationRepository.getAll();
   }
 
   private async getAllEmergencyShutoffs() {
-    const properties = await propertyRepository.getAll();
-    const allShutoffs = [];
-    for (const property of properties) {
-      const shutoffs = await emergencyRepository.getByPropertyId(property.id);
-      allShutoffs.push(...shutoffs);
-    }
-    return allShutoffs;
+    return emergencyRepository.getAll();
   }
 
   private async getAllRecurringTemplates() {
-    const properties = await propertyRepository.getAll();
-    const allTemplates = [];
-    for (const property of properties) {
-      const templates = await recurringTemplateRepository.getByPropertyId(property.id);
-      allTemplates.push(...templates);
-    }
-    return allTemplates;
+    return recurringTemplateRepository.getAll();
   }
 
   private async getAllNotes() {
-    const properties = await propertyRepository.getAll();
-    const allNotes = [];
-    for (const property of properties) {
-      const notes = await notesRepository.getByPropertyId(property.id);
-      allNotes.push(...notes);
-    }
-    return allNotes;
+    return notesRepository.getAll();
   }
 
   async clearAllData(): Promise<void> {

@@ -60,14 +60,14 @@ export function RoomDetailScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const [roomData, assetsData] = await Promise.all([
+      const [roomData, assetsData, expensesData] = await Promise.all([
         roomRepository.getById(route.params.roomId),
         assetRepository.getByRoomId(route.params.roomId),
+        expenseRepository.getByRoomId(route.params.roomId),
       ]);
       setRoom(roomData);
       setAssets(assetsData);
-      // TODO: Get expenses by room when roomId filter is added
-      setExpenses([]);
+      setExpenses(expensesData);
     } catch (error) {
       console.error('Failed to load room:', error);
     } finally {
@@ -90,6 +90,8 @@ export function RoomDetailScreen() {
   const handleMoreOptions = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    if (!room) return;
+
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -99,7 +101,7 @@ export function RoomDetailScreen() {
         },
         (buttonIndex) => {
           if (buttonIndex === 1) {
-            navigation.navigate('EditRoom', { roomId: room!.id });
+            navigation.navigate('EditRoom', { roomId: room.id });
           } else if (buttonIndex === 2) {
             handleDelete();
           }
@@ -110,7 +112,7 @@ export function RoomDetailScreen() {
         { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('room.edit'),
-          onPress: () => navigation.navigate('EditRoom', { roomId: room!.id }),
+          onPress: () => navigation.navigate('EditRoom', { roomId: room.id }),
         },
         { text: t('room.delete'), style: 'destructive', onPress: handleDelete },
       ]);
@@ -118,9 +120,11 @@ export function RoomDetailScreen() {
   };
 
   const handleDelete = () => {
+    if (!room) return;
+
     Alert.alert(
       t('room.delete'),
-      'Are you sure you want to delete this room? Assets in this room will be unassigned. This action cannot be undone.',
+      t('room.deleteConfirmation'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -128,7 +132,7 @@ export function RoomDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await roomRepository.delete(room!.id);
+              await roomRepository.delete(room.id);
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete room:', error);
@@ -292,10 +296,10 @@ export function RoomDetailScreen() {
               variant="default"
               padding="sm"
               className="flex-1 items-center bg-purple-50 border border-purple-100"
-              onPress={() =>
+              onPress={() => room &&
                 navigation.navigate('PaintCodes', {
                   propertyId: route.params.propertyId,
-                  roomId: room!.id,
+                  roomId: room.id,
                 })
               }
             >
@@ -309,10 +313,10 @@ export function RoomDetailScreen() {
               variant="default"
               padding="sm"
               className="flex-1 items-center bg-blue-50 border border-blue-100"
-              onPress={() =>
+              onPress={() => room &&
                 navigation.navigate('Measurements', {
                   propertyId: route.params.propertyId,
-                  roomId: room!.id,
+                  roomId: room.id,
                 })
               }
             >
@@ -326,10 +330,10 @@ export function RoomDetailScreen() {
               variant="default"
               padding="sm"
               className="flex-1 items-center bg-green-50 border border-green-100"
-              onPress={() =>
+              onPress={() => room &&
                 navigation.navigate('AddExpense', {
                   propertyId: route.params.propertyId,
-                  roomId: room!.id,
+                  roomId: room.id,
                 })
               }
             >
@@ -343,10 +347,10 @@ export function RoomDetailScreen() {
               variant="default"
               padding="sm"
               className="flex-1 items-center bg-pink-50 border border-pink-100"
-              onPress={() =>
+              onPress={() => room &&
                 navigation.navigate('AddAsset', {
                   propertyId: route.params.propertyId,
-                  roomId: room!.id,
+                  roomId: room.id,
                 })
               }
             >
@@ -365,10 +369,10 @@ export function RoomDetailScreen() {
               {t('asset.title')} ({assets.length})
             </Text>
             <TouchableOpacity
-              onPress={() =>
+              onPress={() => room &&
                 navigation.navigate('AddAsset', {
                   propertyId: route.params.propertyId,
-                  roomId: room!.id,
+                  roomId: room.id,
                 })
               }
               className="flex-row items-center"
@@ -392,10 +396,10 @@ export function RoomDetailScreen() {
                 title={t('room.addFirstAsset')}
                 variant="primary"
                 size="sm"
-                onPress={() =>
+                onPress={() => room &&
                   navigation.navigate('AddAsset', {
                     propertyId: route.params.propertyId,
-                    roomId: room!.id,
+                    roomId: room.id,
                   })
                 }
                 className="mt-4"

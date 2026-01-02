@@ -474,11 +474,11 @@ export function MaintenanceScreen() {
           <View className="px-5 mt-6">
             <Card variant="filled" padding="lg">
               <View className="items-center py-6">
-                <View className="w-16 h-16 rounded-2xl bg-slate-200 items-center justify-center mb-4">
-                  <Settings size={32} color={COLORS.slate[400]} />
+                <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                  <Settings size={32} color={isDark ? COLORS.slate[400] : COLORS.slate[400]} />
                 </View>
-                <Text className="text-lg font-semibold text-slate-700 text-center">{t('maintenance.noTasks')}</Text>
-                <Text className="text-sm text-slate-500 text-center mt-2 px-4">
+                <Text className={`text-lg font-semibold text-center ${isDark ? 'text-white' : 'text-slate-700'}`}>{t('maintenance.noTasks')}</Text>
+                <Text className={`text-sm text-center mt-2 px-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {t('maintenance.noTasksDesc')}
                 </Text>
                 <Button
@@ -537,7 +537,7 @@ export function MaintenanceScreen() {
                               <View className="flex-1 ml-3">
                                 <Text
                                   className={`text-base font-semibold ${
-                                    task.isCompleted ? 'text-slate-400' : 'text-slate-900'
+                                    task.isCompleted ? (isDark ? 'text-slate-500' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900')
                                   }`}
                                 >
                                   {task.title}
@@ -548,10 +548,10 @@ export function MaintenanceScreen() {
                                   <Badge label={getFrequencyLabel(task.frequency)} variant="default" size="sm" />
 
                                   {task.isCompleted ? (
-                                    <View className="flex-row items-center bg-green-50 px-2 py-1 rounded-lg">
+                                    <View className={`flex-row items-center px-2 py-1 rounded-lg ${isDark ? 'bg-green-900/40' : 'bg-green-50'}`}>
                                       <CheckCircle2 size={12} color={COLORS.success} />
-                                      <Text className="text-xs text-green-700 ml-1 font-medium">
-                                        Done {formatRelative(task.lastCompletedDate!)}
+                                      <Text className={`text-xs ml-1 font-medium ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+                                        {t('maintenance.status.completed')} {formatRelative(task.lastCompletedDate!)}
                                       </Text>
                                     </View>
                                   ) : (
@@ -600,7 +600,7 @@ export function MaintenanceScreen() {
 
                             {/* Expanded Actions */}
                             {isExpanded && (
-                              <View className="mt-4 pt-3 border-t border-slate-100">
+                              <View className={`mt-4 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
                                 <View className="flex-row gap-2">
                                   {!task.isCompleted && (
                                     <TouchableOpacity
@@ -618,31 +618,31 @@ export function MaintenanceScreen() {
 
                                   <TouchableOpacity
                                     onPress={() => handleViewHistory(task)}
-                                    className="flex-1 py-2.5 rounded-lg flex-row items-center justify-center bg-slate-100"
+                                    className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
                                     activeOpacity={0.7}
                                   >
-                                    <History size={16} color={COLORS.slate[600]} />
-                                    <Text className="text-sm font-semibold ml-1.5 text-slate-600">{t('maintenance.history')}</Text>
+                                    <History size={16} color={isDark ? COLORS.slate[300] : COLORS.slate[600]} />
+                                    <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('maintenance.history')}</Text>
                                   </TouchableOpacity>
                                 </View>
 
                                 <View className="flex-row gap-2 mt-2">
                                   <TouchableOpacity
                                     onPress={() => handleEditTask(task)}
-                                    className="flex-1 py-2.5 rounded-lg flex-row items-center justify-center bg-slate-100"
+                                    className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
                                     activeOpacity={0.7}
                                   >
-                                    <Edit3 size={16} color={COLORS.slate[600]} />
-                                    <Text className="text-sm font-semibold ml-1.5 text-slate-600">{t('maintenance.edit')}</Text>
+                                    <Edit3 size={16} color={isDark ? COLORS.slate[300] : COLORS.slate[600]} />
+                                    <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('maintenance.edit')}</Text>
                                   </TouchableOpacity>
 
                                   <TouchableOpacity
                                     onPress={() => handleDeleteTask(task)}
-                                    className="flex-1 py-2.5 rounded-lg flex-row items-center justify-center bg-red-50"
+                                    className={`flex-1 py-2.5 rounded-lg flex-row items-center justify-center ${isDark ? 'bg-red-900/40' : 'bg-red-50'}`}
                                     activeOpacity={0.7}
                                   >
                                     <Trash2 size={16} color={COLORS.error} />
-                                    <Text className="text-sm font-semibold ml-1.5 text-red-600">{t('common.delete')}</Text>
+                                    <Text className={`text-sm font-semibold ml-1.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{t('common.delete')}</Text>
                                   </TouchableOpacity>
                                 </View>
                               </View>
@@ -815,81 +815,78 @@ export function MaintenanceScreen() {
                   if (selectedDate) setTempTaskDueDate(selectedDate);
                 }}
                 style={{ height: 200 }}
-                textColor={isDark ? '#fff' : undefined}
+                textColor={isDark ? '#ffffff' : '#1e293b'}
               />
             </View>
           </View>
         </Modal>
-      </Modal>
 
-      {/* Worker Picker Modal */}
-      <Modal
-        visible={showWorkerPicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowWorkerPicker(false)}
-      >
-        <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-          <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
-            <TouchableOpacity onPress={() => setShowWorkerPicker(false)} className="p-2">
-              <X size={22} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
-            </TouchableOpacity>
-            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.selectWorker')}</Text>
-            <View className="w-10" />
-          </View>
-
-          <ScrollView className="flex-1 px-5 py-4">
-            <TouchableOpacity
-              onPress={() => {
-                setTaskAssignedWorkerId(undefined);
-                setShowWorkerPicker(false);
-              }}
-              className={`flex-row items-center px-4 py-3 rounded-xl border-2 mb-2 ${
-                !taskAssignedWorkerId
-                  ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
-                  : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
-              }`}
-              activeOpacity={0.7}
-            >
-              <Text className={`text-base font-medium ${!taskAssignedWorkerId ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
-                {t('maintenance.noWorkerAssigned')}
-              </Text>
-            </TouchableOpacity>
-
-            {workers.map((worker) => (
-              <TouchableOpacity
-                key={worker.id}
-                onPress={() => {
-                  setTaskAssignedWorkerId(worker.id);
-                  setShowWorkerPicker(false);
-                }}
-                className={`flex-row items-center px-4 py-3 rounded-xl border-2 mb-2 ${
-                  taskAssignedWorkerId === worker.id
-                    ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
-                    : isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
-                }`}
-                activeOpacity={0.7}
-              >
-                <User size={20} color={taskAssignedWorkerId === worker.id ? COLORS.primary[500] : COLORS.slate[400]} />
-                <View className="flex-1 ml-3">
-                  <Text className={`text-base font-medium ${taskAssignedWorkerId === worker.id ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
-                    {worker.name}
-                  </Text>
-                  {worker.specialty.length > 0 && (
-                    <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{worker.specialty.join(', ')}</Text>
-                  )}
-                </View>
-                {taskAssignedWorkerId === worker.id && <CheckCircle2 size={20} color={COLORS.primary[500]} />}
-              </TouchableOpacity>
-            ))}
-
-            {workers.length === 0 && (
-              <View className="items-center py-8">
-                <Text className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.noWorkers')}</Text>
+        {/* Worker Picker Modal - Inside Task Modal for proper nesting on Android */}
+        <Modal visible={showWorkerPicker} transparent animationType="slide">
+          <View className="flex-1 justify-end bg-black/50">
+            <View className={`rounded-t-3xl max-h-[70%] ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                <TouchableOpacity onPress={() => setShowWorkerPicker(false)}>
+                  <Text className={`text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('maintenance.selectWorker')}</Text>
+                <View className="w-12" />
               </View>
-            )}
-          </ScrollView>
-        </View>
+
+              <ScrollView className="px-4 py-3" showsVerticalScrollIndicator={false}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setTaskAssignedWorkerId(undefined);
+                    setShowWorkerPicker(false);
+                  }}
+                  className={`flex-row items-center px-4 py-3 rounded-xl border-2 mb-2 ${
+                    !taskAssignedWorkerId
+                      ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                      : isDark ? 'border-slate-700 bg-slate-700' : 'border-slate-200 bg-white'
+                  }`}
+                  activeOpacity={0.7}
+                >
+                  <Text className={`text-base font-medium ${!taskAssignedWorkerId ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
+                    {t('maintenance.noWorkerAssigned')}
+                  </Text>
+                </TouchableOpacity>
+
+                {workers.map((worker) => (
+                  <TouchableOpacity
+                    key={worker.id}
+                    onPress={() => {
+                      setTaskAssignedWorkerId(worker.id);
+                      setShowWorkerPicker(false);
+                    }}
+                    className={`flex-row items-center px-4 py-3 rounded-xl border-2 mb-2 ${
+                      taskAssignedWorkerId === worker.id
+                        ? isDark ? 'border-primary-500 bg-primary-900/40' : 'border-primary-500 bg-primary-50'
+                        : isDark ? 'border-slate-700 bg-slate-700' : 'border-slate-200 bg-white'
+                    }`}
+                    activeOpacity={0.7}
+                  >
+                    <User size={20} color={taskAssignedWorkerId === worker.id ? COLORS.primary[500] : COLORS.slate[400]} />
+                    <View className="flex-1 ml-3">
+                      <Text className={`text-base font-medium ${taskAssignedWorkerId === worker.id ? 'text-primary-700' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
+                        {worker.name}
+                      </Text>
+                      {worker.specialty.length > 0 && (
+                        <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{worker.specialty.join(', ')}</Text>
+                      )}
+                    </View>
+                    {taskAssignedWorkerId === worker.id && <CheckCircle2 size={20} color={COLORS.primary[500]} />}
+                  </TouchableOpacity>
+                ))}
+
+                {workers.length === 0 && (
+                  <View className="items-center py-8">
+                    <Text className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('maintenance.noWorkers')}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </Modal>
 
       {/* Complete Task Modal */}

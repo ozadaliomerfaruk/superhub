@@ -28,6 +28,13 @@ function mapRowToEmergency(row: EmergencyRow): EmergencyShutoff {
 }
 
 export const emergencyRepository = {
+  async getAll(): Promise<EmergencyShutoff[]> {
+    const rows = await queryAll<EmergencyRow>(
+      'SELECT * FROM emergency_shutoffs ORDER BY type ASC'
+    );
+    return rows.map(mapRowToEmergency);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<EmergencyShutoff[]> {
     const rows = await queryAll<EmergencyRow>(
       'SELECT * FROM emergency_shutoffs WHERE property_id = ? ORDER BY type ASC',

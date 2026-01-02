@@ -12,6 +12,11 @@ function getLocale() {
   return cachedLocale === 'tr' ? tr : enUS;
 }
 
+// Export for external usage (e.g., in ReportsScreen)
+export function getDateLocale() {
+  return getLocale();
+}
+
 // Update locale cache
 export function updateLocaleCache(language: 'tr' | 'en'): void {
   cachedLocale = language;

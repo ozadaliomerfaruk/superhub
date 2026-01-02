@@ -1,7 +1,10 @@
-import { Renovation, UUID } from '../../../types';
+import { Renovation, RenovationWithDetails, UUID, ExpenseType } from '../../../types';
 import { queryAll, queryFirst, execute } from '../database';
 import { generateUUID } from '../../../utils/uuid';
 import { getCurrentISODate } from '../../../utils/date';
+import { renovationWorkerRepository } from './renovationWorkerRepository';
+import { renovationAssetRepository } from './renovationAssetRepository';
+import { renovationCostRepository } from './renovationCostRepository';
 
 interface RenovationRow {
   id: string;
@@ -13,8 +16,13 @@ interface RenovationRow {
   after_image_uri: string | null;
   completed_date: string | null;
   cost: number | null;
+  expense_type: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface RenovationWithRoomRow extends RenovationRow {
+  room_name: string | null;
 }
 
 function mapRowToRenovation(row: RenovationRow): Renovation {
@@ -28,12 +36,20 @@ function mapRowToRenovation(row: RenovationRow): Renovation {
     afterImageUri: row.after_image_uri || undefined,
     completedDate: row.completed_date || undefined,
     cost: row.cost || undefined,
+    expenseType: (row.expense_type as ExpenseType) || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 export const renovationRepository = {
+  async getAll(): Promise<Renovation[]> {
+    const rows = await queryAll<RenovationRow>(
+      'SELECT * FROM renovations ORDER BY created_at DESC'
+    );
+    return rows.map(mapRowToRenovation);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<Renovation[]> {
     const rows = await queryAll<RenovationRow>(
       'SELECT * FROM renovations WHERE property_id = ? ORDER BY created_at DESC',
@@ -79,8 +95,8 @@ export const renovationRepository = {
     const now = getCurrentISODate();
 
     await execute(
-      `INSERT INTO renovations (id, property_id, room_id, title, description, before_image_uri, after_image_uri, completed_date, cost, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO renovations (id, property_id, room_id, title, description, before_image_uri, after_image_uri, completed_date, cost, expense_type, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.propertyId,
@@ -91,6 +107,7 @@ export const renovationRepository = {
         data.afterImageUri || null,
         data.completedDate || null,
         data.cost || null,
+        data.expenseType || null,
         now,
         now,
       ]
@@ -134,6 +151,10 @@ export const renovationRepository = {
       fields.push('cost = ?');
       values.push(data.cost || null);
     }
+    if (data.expenseType !== undefined) {
+      fields.push('expense_type = ?');
+      values.push(data.expenseType || null);
+    }
 
     fields.push('updated_at = ?');
     values.push(now);
@@ -159,5 +180,66 @@ export const renovationRepository = {
       [propertyId]
     );
     return result?.total || 0;
+  },
+
+  async getByIdWithDetails(id: UUID): Promise<RenovationWithDetails | null> {
+    const row = await queryFirst<RenovationWithRoomRow>(
+      `SELECT r.*, rm.name as room_name
+       FROM renovations r
+       LEFT JOIN rooms rm ON r.room_id = rm.id
+       WHERE r.id = ?`,
+      [id]
+    );
+    if (!row) return null;
+
+    const [workers, assets, costs] = await Promise.all([
+      renovationWorkerRepository.getByRenovationId(id),
+      renovationAssetRepository.getByRenovationId(id),
+      renovationCostRepository.getByRenovationId(id),
+    ]);
+
+    const totalCost = costs.reduce((sum, c) => sum + c.amount, 0) + (row.cost || 0);
+
+    return {
+      ...mapRowToRenovation(row),
+      roomName: row.room_name || undefined,
+      workers,
+      assets,
+      costs,
+      totalCost,
+    };
+  },
+
+  async getByPropertyIdWithDetails(propertyId: UUID): Promise<RenovationWithDetails[]> {
+    const rows = await queryAll<RenovationWithRoomRow>(
+      `SELECT r.*, rm.name as room_name
+       FROM renovations r
+       LEFT JOIN rooms rm ON r.room_id = rm.id
+       WHERE r.property_id = ?
+       ORDER BY r.created_at DESC`,
+      [propertyId]
+    );
+
+    const results: RenovationWithDetails[] = [];
+    for (const row of rows) {
+      const [workers, assets, costs] = await Promise.all([
+        renovationWorkerRepository.getByRenovationId(row.id),
+        renovationAssetRepository.getByRenovationId(row.id),
+        renovationCostRepository.getByRenovationId(row.id),
+      ]);
+
+      const totalCost = costs.reduce((sum, c) => sum + c.amount, 0) + (row.cost || 0);
+
+      results.push({
+        ...mapRowToRenovation(row),
+        roomName: row.room_name || undefined,
+        workers,
+        assets,
+        costs,
+        totalCost,
+      });
+    }
+
+    return results;
   },
 };

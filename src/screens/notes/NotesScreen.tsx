@@ -22,14 +22,18 @@ import {
   X,
   Check,
   Search,
+  Bell,
+  BellOff,
+  Calendar,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../../navigation/types';
 import { Note, Property } from '../../types';
 import { notesRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card, EmptyState, FAB, Badge } from '../../components/ui';
 import { COLORS } from '../../constants/theme';
-import { formatRelativeDate } from '../../utils/date';
+import { formatRelativeDate, formatDate } from '../../utils/date';
 import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -49,8 +53,12 @@ export function NotesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
+  const [newNoteReminder, setNewNoteReminder] = useState<Date | null>(null);
+  const [showNewNoteDatePicker, setShowNewNoteDatePicker] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [editReminder, setEditReminder] = useState<Date | null>(null);
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -89,8 +97,10 @@ export function NotesScreen() {
         propertyId,
         content: newNoteContent.trim(),
         isPinned: false,
+        reminderDate: newNoteReminder ? newNoteReminder.toISOString().split('T')[0] : undefined,
       });
       setNewNoteContent('');
+      setNewNoteReminder(null);
       setShowAddNote(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       loadData();
@@ -106,9 +116,11 @@ export function NotesScreen() {
     try {
       await notesRepository.update(editingNote.id, {
         content: editContent.trim(),
+        reminderDate: editReminder ? editReminder.toISOString().split('T')[0] : undefined,
       });
       setEditingNote(null);
       setEditContent('');
+      setEditReminder(null);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       loadData();
     } catch (error) {
@@ -154,11 +166,23 @@ export function NotesScreen() {
   const startEditing = (note: Note) => {
     setEditingNote(note);
     setEditContent(note.content);
+    setEditReminder(note.reminderDate ? new Date(note.reminderDate) : null);
   };
 
   const cancelEditing = () => {
     setEditingNote(null);
     setEditContent('');
+    setEditReminder(null);
+  };
+
+  const handleClearReminder = async (note: Note) => {
+    try {
+      await notesRepository.clearReminder(note.id);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      loadData();
+    } catch (error) {
+      console.error('Failed to clear reminder:', error);
+    }
   };
 
   const pinnedNotes = notes.filter((n) => n.isPinned);
@@ -222,11 +246,39 @@ export function NotesScreen() {
                   className={`text-base min-h-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}
                   textAlignVertical="top"
                 />
+                {/* Reminder Date Picker */}
+                <TouchableOpacity
+                  onPress={() => setShowNewNoteDatePicker(true)}
+                  className={`flex-row items-center mt-3 p-3 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
+                >
+                  <Bell size={18} color={newNoteReminder ? COLORS.secondary[500] : isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                  <Text className={`flex-1 ml-2 ${newNoteReminder ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+                    {newNoteReminder ? formatDate(newNoteReminder.toISOString()) : t('notes.addReminder')}
+                  </Text>
+                  {newNoteReminder && (
+                    <TouchableOpacity onPress={() => setNewNoteReminder(null)}>
+                      <X size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+                {showNewNoteDatePicker && (
+                  <DateTimePicker
+                    value={newNoteReminder || new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    minimumDate={new Date()}
+                    onChange={(_, selectedDate) => {
+                      setShowNewNoteDatePicker(Platform.OS === 'ios');
+                      if (selectedDate) setNewNoteReminder(selectedDate);
+                    }}
+                  />
+                )}
                 <View className={`flex-row justify-end gap-2 mt-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
                   <TouchableOpacity
                     onPress={() => {
                       setShowAddNote(false);
                       setNewNoteContent('');
+                      setNewNoteReminder(null);
                     }}
                     className="px-4 py-2 rounded-lg"
                     activeOpacity={0.7}
@@ -273,12 +325,18 @@ export function NotesScreen() {
                         isDark={isDark}
                         isEditing={editingNote?.id === note.id}
                         editContent={editContent}
+                        editReminder={editReminder}
+                        showEditDatePicker={showEditDatePicker}
                         onEditContentChange={setEditContent}
+                        onEditReminderChange={setEditReminder}
+                        onToggleDatePicker={setShowEditDatePicker}
                         onTogglePin={() => handleTogglePin(note)}
                         onEdit={() => startEditing(note)}
                         onDelete={() => handleDeleteNote(note)}
                         onSaveEdit={handleUpdateNote}
                         onCancelEdit={cancelEditing}
+                        onClearReminder={() => handleClearReminder(note)}
+                        t={t}
                       />
                     ))}
                   </View>
@@ -301,12 +359,18 @@ export function NotesScreen() {
                         isDark={isDark}
                         isEditing={editingNote?.id === note.id}
                         editContent={editContent}
+                        editReminder={editReminder}
+                        showEditDatePicker={showEditDatePicker}
                         onEditContentChange={setEditContent}
+                        onEditReminderChange={setEditReminder}
+                        onToggleDatePicker={setShowEditDatePicker}
                         onTogglePin={() => handleTogglePin(note)}
                         onEdit={() => startEditing(note)}
                         onDelete={() => handleDeleteNote(note)}
                         onSaveEdit={handleUpdateNote}
                         onCancelEdit={cancelEditing}
+                        onClearReminder={() => handleClearReminder(note)}
+                        t={t}
                       />
                     ))}
                   </View>
@@ -333,12 +397,18 @@ interface NoteCardProps {
   isDark: boolean;
   isEditing: boolean;
   editContent: string;
+  editReminder: Date | null;
+  showEditDatePicker: boolean;
   onEditContentChange: (content: string) => void;
+  onEditReminderChange: (date: Date | null) => void;
+  onToggleDatePicker: (show: boolean) => void;
   onTogglePin: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
+  onClearReminder: () => void;
+  t: (key: string) => string;
 }
 
 function NoteCard({
@@ -346,12 +416,18 @@ function NoteCard({
   isDark,
   isEditing,
   editContent,
+  editReminder,
+  showEditDatePicker,
   onEditContentChange,
+  onEditReminderChange,
+  onToggleDatePicker,
   onTogglePin,
   onEdit,
   onDelete,
   onSaveEdit,
   onCancelEdit,
+  onClearReminder,
+  t,
 }: NoteCardProps) {
   if (isEditing) {
     return (
@@ -364,6 +440,33 @@ function NoteCard({
           className={`text-base min-h-[80px] ${isDark ? 'text-white' : 'text-slate-900'}`}
           textAlignVertical="top"
         />
+        {/* Reminder Date Picker */}
+        <TouchableOpacity
+          onPress={() => onToggleDatePicker(true)}
+          className={`flex-row items-center mt-3 p-3 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
+        >
+          <Bell size={18} color={editReminder ? COLORS.secondary[500] : isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+          <Text className={`flex-1 ml-2 ${editReminder ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+            {editReminder ? formatDate(editReminder.toISOString()) : t('notes.addReminder')}
+          </Text>
+          {editReminder && (
+            <TouchableOpacity onPress={() => onEditReminderChange(null)}>
+              <X size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+        {showEditDatePicker && (
+          <DateTimePicker
+            value={editReminder || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            minimumDate={new Date()}
+            onChange={(_, selectedDate) => {
+              onToggleDatePicker(Platform.OS === 'ios');
+              if (selectedDate) onEditReminderChange(selectedDate);
+            }}
+          />
+        )}
         <View className={`flex-row justify-end gap-2 mt-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
           <TouchableOpacity
             onPress={onCancelEdit}
@@ -391,14 +494,33 @@ function NoteCard({
           <Text className={`text-base leading-relaxed ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
             {note.content}
           </Text>
-          <Text className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-            {formatRelativeDate(note.updatedAt)}
-          </Text>
+          <View className="flex-row items-center mt-2 gap-3">
+            <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              {formatRelativeDate(note.updatedAt)}
+            </Text>
+            {note.reminderDate && (
+              <View className="flex-row items-center">
+                <Bell size={12} color={COLORS.secondary[500]} />
+                <Text className={`text-xs ml-1 text-secondary-600`}>
+                  {formatDate(note.reminderDate)}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
       {/* Actions */}
       <View className={`flex-row justify-end gap-1 mt-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+        {note.reminderDate && (
+          <TouchableOpacity
+            onPress={onClearReminder}
+            className={`w-9 h-9 rounded-lg items-center justify-center bg-secondary-100`}
+            activeOpacity={0.7}
+          >
+            <BellOff size={16} color={COLORS.secondary[600]} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           onPress={onTogglePin}
           className={`w-9 h-9 rounded-lg items-center justify-center ${note.isPinned ? 'bg-secondary-100' : isDark ? 'bg-slate-700' : 'bg-slate-100'}`}

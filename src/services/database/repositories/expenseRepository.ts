@@ -60,6 +60,14 @@ export const expenseRepository = {
     return rows.map(mapRowToExpense);
   },
 
+  async getByRoomId(roomId: UUID): Promise<Expense[]> {
+    const rows = await queryAll<ExpenseRow>(
+      'SELECT * FROM expenses WHERE room_id = ? ORDER BY date DESC',
+      [roomId]
+    );
+    return rows.map(mapRowToExpense);
+  },
+
   async getById(id: UUID): Promise<Expense | null> {
     const row = await queryFirst<ExpenseRow>(
       'SELECT * FROM expenses WHERE id = ?',

@@ -796,6 +796,7 @@ export function PropertyAssetsScreen() {
                   if (date) setTempPurchaseDate(date);
                 }}
                 style={{ height: 200 }}
+                textColor={isDark ? '#ffffff' : '#1e293b'}
               />
             </View>
           </View>
@@ -837,6 +838,7 @@ export function PropertyAssetsScreen() {
                   if (date) setTempWarrantyDate(date);
                 }}
                 style={{ height: 200 }}
+                textColor={isDark ? '#ffffff' : '#1e293b'}
               />
             </View>
           </View>

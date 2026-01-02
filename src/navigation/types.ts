@@ -38,12 +38,14 @@ export type RootStackParamList = {
   WiFiInfo: { propertyId: UUID };
   Documents: { propertyId: UUID; assetId?: UUID };
   Renovations: { propertyId: UUID };
+  RenovationDetail: { renovationId: UUID };
   BillTemplates: { propertyId: UUID };
   Notifications: undefined;
   PropertyExpenses: { propertyId: UUID };
   PropertyAssets: { propertyId: UUID };
   Notes: { propertyId: UUID };
   Reports: undefined;
+  ManageCategories: undefined;
 };
 
 declare global {

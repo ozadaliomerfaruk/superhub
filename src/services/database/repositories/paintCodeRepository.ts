@@ -36,6 +36,13 @@ function mapRowToPaintCode(row: PaintCodeRow): PaintCode {
 }
 
 export const paintCodeRepository = {
+  async getAll(): Promise<PaintCode[]> {
+    const rows = await queryAll<PaintCodeRow>(
+      'SELECT * FROM paint_codes ORDER BY location ASC'
+    );
+    return rows.map(mapRowToPaintCode);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<PaintCode[]> {
     const rows = await queryAll<PaintCodeRow>(
       'SELECT * FROM paint_codes WHERE property_id = ? ORDER BY location ASC',

@@ -38,6 +38,13 @@ function mapRowToMeasurement(row: MeasurementRow): Measurement {
 }
 
 export const measurementRepository = {
+  async getAll(): Promise<Measurement[]> {
+    const rows = await queryAll<MeasurementRow>(
+      'SELECT * FROM measurements ORDER BY name ASC'
+    );
+    return rows.map(mapRowToMeasurement);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<Measurement[]> {
     const rows = await queryAll<MeasurementRow>(
       'SELECT * FROM measurements WHERE property_id = ? ORDER BY name ASC',

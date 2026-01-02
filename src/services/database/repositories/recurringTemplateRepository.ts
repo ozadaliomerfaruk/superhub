@@ -47,6 +47,13 @@ function mapRowToTemplateWithHistory(row: RecurringTemplateWithHistoryRow): Recu
 }
 
 export const recurringTemplateRepository = {
+  async getAll(): Promise<RecurringTemplate[]> {
+    const rows = await queryAll<RecurringTemplateRow>(
+      'SELECT * FROM recurring_templates ORDER BY name ASC'
+    );
+    return rows.map(mapRowToTemplate);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<RecurringTemplate[]> {
     const rows = await queryAll<RecurringTemplateRow>(
       'SELECT * FROM recurring_templates WHERE property_id = ? ORDER BY name ASC',

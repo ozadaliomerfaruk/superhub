@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Switch, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   Moon,
   Sun,
@@ -20,6 +21,7 @@ import {
   Lock,
   Trash2,
   Globe,
+  Tag,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { ListItem, Divider, SelectDialog, PasswordDialog } from '../../components/ui';
@@ -39,8 +41,12 @@ import {
 } from '../../contexts';
 import { AppSettings } from '../../types';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '../../i18n';
+import { RootStackParamList } from '../../navigation/types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function SettingsScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { themeMode, setThemeMode, isDark } = useTheme();
   const { settings, updateCurrency, updateDateFormat, updatePhotoQuality, updateEncryptExports } = useSettings();
@@ -463,6 +469,18 @@ export function SettingsScreen() {
               }
               showChevron
               onPress={() => setShowPhotoQualityPicker(true)}
+            />
+            <Divider className="ml-[68px]" />
+            <ListItem
+              title={t('settingsScreen.manageCategories')}
+              subtitle={t('settingsScreen.manageCategoriesSubtitle')}
+              leftIcon={
+                <View className="w-9 h-9 rounded-xl bg-orange-100 items-center justify-center">
+                  <Tag size={18} color="#f97316" />
+                </View>
+              }
+              showChevron
+              onPress={() => navigation.navigate('ManageCategories')}
             />
           </View>
         </View>

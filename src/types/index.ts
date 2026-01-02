@@ -140,6 +140,16 @@ export interface Worker {
   updatedAt: string;
 }
 
+// Worker Note (tarihli notlar)
+export interface WorkerNote {
+  id: UUID;
+  workerId: UUID;
+  content: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Document Types
 export interface Document {
   id: UUID;
@@ -277,8 +287,61 @@ export interface Renovation {
   afterImageUri?: string;
   completedDate?: string;
   cost?: number;
+  expenseType?: ExpenseType;
   createdAt: string;
   updatedAt: string;
+}
+
+// Renovation Worker Junction
+export interface RenovationWorker {
+  id: UUID;
+  renovationId: UUID;
+  workerId: UUID;
+  role?: string;
+  createdAt: string;
+}
+
+// Renovation Worker with details for display
+export interface RenovationWorkerWithDetails extends RenovationWorker {
+  workerName: string;
+  workerPhone?: string;
+  workerSpecialty: string[];
+}
+
+// Renovation Asset Junction
+export interface RenovationAsset {
+  id: UUID;
+  renovationId: UUID;
+  assetId: UUID;
+  notes?: string;
+  createdAt: string;
+}
+
+// Renovation Asset with details for display
+export interface RenovationAssetWithDetails extends RenovationAsset {
+  assetName: string;
+  assetCategory: AssetCategory;
+  assetBrand?: string;
+}
+
+// Renovation Cost Item
+export interface RenovationCost {
+  id: UUID;
+  renovationId: UUID;
+  description: string;
+  amount: number;
+  category?: string;
+  date?: string;
+  createdAt: string;
+}
+
+// Renovation with all related data for display
+export interface RenovationWithDetails extends Renovation {
+  roomName?: string;
+  workers: RenovationWorkerWithDetails[];
+  assets: RenovationAssetWithDetails[];
+  costs: RenovationCost[];
+  totalCost: number;
 }
 
 // Timeline Entry (for unified timeline view)
@@ -303,6 +366,8 @@ export interface Note {
   workerId?: UUID;
   content: string;
   isPinned: boolean;
+  reminderDate?: string;
+  reminderNotificationId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -316,6 +381,21 @@ export interface AppSettings {
   biometricEnabled: boolean;
   photoQuality: 'original' | 'high' | 'medium' | 'low';
   encryptExports: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Custom Category for user-defined expense categories and types
+export type CustomCategoryType = 'expense_category' | 'expense_type' | 'bill_category';
+
+export interface CustomCategory {
+  id: UUID;
+  type: CustomCategoryType;
+  name: string;
+  icon?: string;
+  color?: string;
+  isDefault: boolean;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }

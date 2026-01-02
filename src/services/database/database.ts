@@ -128,6 +128,103 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_recurring_payment_history_date ON recurring_payment_history(paid_date);
     `);
 
+    // Migration V5: Add expense_type to renovations
+    const renovationsTableInfo = await database.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(renovations)"
+    );
+    const hasExpenseType = renovationsTableInfo.some(col => col.name === 'expense_type');
+    if (!hasExpenseType) {
+      await database.execAsync('ALTER TABLE renovations ADD COLUMN expense_type TEXT');
+    }
+
+    // Migration V5: Add reminder columns to notes
+    const notesTableInfo = await database.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(notes)"
+    );
+    const hasReminderDate = notesTableInfo.some(col => col.name === 'reminder_date');
+    if (!hasReminderDate) {
+      await database.execAsync('ALTER TABLE notes ADD COLUMN reminder_date TEXT');
+      await database.execAsync('ALTER TABLE notes ADD COLUMN reminder_notification_id TEXT');
+    }
+    // Create notes reminder index (after column exists)
+    await database.execAsync('CREATE INDEX IF NOT EXISTS idx_notes_reminder ON notes(reminder_date)');
+
+    // Migration V5: Create renovation_workers table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS renovation_workers (
+        id TEXT PRIMARY KEY,
+        renovation_id TEXT NOT NULL,
+        worker_id TEXT NOT NULL,
+        role TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE,
+        FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_renovation_workers_renovation ON renovation_workers(renovation_id);
+      CREATE INDEX IF NOT EXISTS idx_renovation_workers_worker ON renovation_workers(worker_id);
+    `);
+
+    // Migration V5: Create renovation_assets table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS renovation_assets (
+        id TEXT PRIMARY KEY,
+        renovation_id TEXT NOT NULL,
+        asset_id TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE,
+        FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_renovation_assets_renovation ON renovation_assets(renovation_id);
+      CREATE INDEX IF NOT EXISTS idx_renovation_assets_asset ON renovation_assets(asset_id);
+    `);
+
+    // Migration V5: Create renovation_costs table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS renovation_costs (
+        id TEXT PRIMARY KEY,
+        renovation_id TEXT NOT NULL,
+        description TEXT NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT,
+        date TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_renovation_costs_renovation ON renovation_costs(renovation_id);
+    `);
+
+    // Migration V5: Create worker_notes table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS worker_notes (
+        id TEXT PRIMARY KEY,
+        worker_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        date TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_worker_notes_worker ON worker_notes(worker_id);
+    `);
+
+
+    // Migration V6: Create custom_categories table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS custom_categories (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        icon TEXT,
+        color TEXT,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_custom_categories_type ON custom_categories(type);
+    `);
+
     await database.execAsync('COMMIT');
   } catch (error) {
     await database.execAsync('ROLLBACK');
@@ -163,5 +260,33 @@ export async function executeMany(sql: string, paramsArray: any[][]): Promise<vo
   const database = await getDatabase();
   for (const params of paramsArray) {
     await database.runAsync(sql, params);
+  }
+}
+
+// Transaction helpers for data consistency
+export async function beginTransaction(): Promise<void> {
+  const database = await getDatabase();
+  await database.execAsync('BEGIN TRANSACTION');
+}
+
+export async function commitTransaction(): Promise<void> {
+  const database = await getDatabase();
+  await database.execAsync('COMMIT');
+}
+
+export async function rollbackTransaction(): Promise<void> {
+  const database = await getDatabase();
+  await database.execAsync('ROLLBACK');
+}
+
+export async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
+  await beginTransaction();
+  try {
+    const result = await fn();
+    await commitTransaction();
+    return result;
+  } catch (error) {
+    await rollbackTransaction();
+    throw error;
   }
 }

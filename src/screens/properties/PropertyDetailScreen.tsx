@@ -227,6 +227,8 @@ export function PropertyDetailScreen() {
   };
 
   const handleMoreOptions = () => {
+    if (!property) return;
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (Platform.OS === 'ios') {
@@ -238,7 +240,7 @@ export function PropertyDetailScreen() {
         },
         (buttonIndex) => {
           if (buttonIndex === 1) {
-            navigation.navigate('EditProperty', { propertyId: property!.id });
+            navigation.navigate('EditProperty', { propertyId: property.id });
           } else if (buttonIndex === 2) {
             handleDelete();
           }
@@ -249,7 +251,7 @@ export function PropertyDetailScreen() {
         { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('property.edit'),
-          onPress: () => navigation.navigate('EditProperty', { propertyId: property!.id }),
+          onPress: () => navigation.navigate('EditProperty', { propertyId: property.id }),
         },
         { text: t('property.delete'), style: 'destructive', onPress: handleDelete },
       ]);
@@ -257,6 +259,8 @@ export function PropertyDetailScreen() {
   };
 
   const handleDelete = () => {
+    if (!property) return;
+
     Alert.alert(
       t('property.delete'),
       t('property.deleteConfirm'),
@@ -267,7 +271,7 @@ export function PropertyDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await propertyRepository.delete(property!.id);
+              await propertyRepository.delete(property.id);
               navigation.goBack();
             } catch (error) {
               console.error('Failed to delete property:', error);
@@ -297,7 +301,8 @@ export function PropertyDetailScreen() {
   };
 
   const handleQuickAction = (action: typeof quickActions[0]) => {
-    const params = { propertyId: property!.id };
+    if (!property) return;
+    const params = { propertyId: property.id };
     navigation.navigate(action.screen as any, params);
   };
 
@@ -431,7 +436,7 @@ export function PropertyDetailScreen() {
               style={{ backgroundColor: `${propertyConfig?.color}15` }}
             >
               <Text className="text-xs font-bold" style={{ color: propertyConfig?.color }}>
-                {propertyConfig?.label}
+                {t(`property.types.${property?.type}`) || propertyConfig?.label}
               </Text>
             </View>
           </View>
@@ -503,7 +508,7 @@ export function PropertyDetailScreen() {
               {t('room.title')} ({rooms.length})
             </Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('AddRoom', { propertyId: property!.id })}
+              onPress={() => property && navigation.navigate('AddRoom', { propertyId: property.id })}
               className="flex-row items-center"
               activeOpacity={0.7}
             >
@@ -530,7 +535,7 @@ export function PropertyDetailScreen() {
                 {t('room.noRoomsDescription')}
               </Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate('AddRoom', { propertyId: property!.id })}
+                onPress={() => property && navigation.navigate('AddRoom', { propertyId: property.id })}
                 className="mt-4"
                 activeOpacity={0.7}
               >
@@ -554,10 +559,10 @@ export function PropertyDetailScreen() {
                     roomConfig={roomConfig}
                     isDark={isDark}
                     index={index}
-                    onPress={() =>
+                    onPress={() => property &&
                       navigation.navigate('RoomDetail', {
                         roomId: room.id,
-                        propertyId: property!.id,
+                        propertyId: property.id,
                       })
                     }
                   />
@@ -575,7 +580,7 @@ export function PropertyDetailScreen() {
             </Text>
             {recentExpenses.length > 0 && (
               <TouchableOpacity
-                onPress={() => navigation.navigate('PropertyExpenses', { propertyId: property!.id })}
+                onPress={() => property && navigation.navigate('PropertyExpenses', { propertyId: property.id })}
                 className="flex-row items-center"
                 activeOpacity={0.7}
               >
@@ -602,7 +607,7 @@ export function PropertyDetailScreen() {
                 {t('expense.noExpensesDescription')}
               </Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate('AddExpense', { propertyId: property!.id })}
+                onPress={() => property && navigation.navigate('AddExpense', { propertyId: property.id })}
                 className="mt-4"
                 activeOpacity={0.7}
               >

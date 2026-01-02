@@ -157,7 +157,7 @@ export function AddRoomScreen() {
         {/* Room Name */}
         <Input
           label={t('room.name')}
-          placeholder="e.g., Master Bedroom, Kitchen"
+          placeholder={t('room.namePlaceholder')}
           value={name}
           onChangeText={setName}
           containerClassName="mb-4"

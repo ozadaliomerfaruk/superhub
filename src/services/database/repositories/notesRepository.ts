@@ -11,6 +11,8 @@ interface NoteRow {
   worker_id: string | null;
   content: string;
   is_pinned: number;
+  reminder_date: string | null;
+  reminder_notification_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +26,8 @@ function mapRowToNote(row: NoteRow): Note {
     workerId: row.worker_id || undefined,
     content: row.content,
     isPinned: row.is_pinned === 1,
+    reminderDate: row.reminder_date || undefined,
+    reminderNotificationId: row.reminder_notification_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -111,8 +115,8 @@ export const notesRepository = {
     const now = getCurrentISODate();
 
     await execute(
-      `INSERT INTO notes (id, property_id, room_id, asset_id, worker_id, content, is_pinned, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO notes (id, property_id, room_id, asset_id, worker_id, content, is_pinned, reminder_date, reminder_notification_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.propertyId || null,
@@ -121,6 +125,8 @@ export const notesRepository = {
         data.workerId || null,
         data.content,
         data.isPinned ? 1 : 0,
+        data.reminderDate || null,
+        data.reminderNotificationId || null,
         now,
         now,
       ]
@@ -159,6 +165,14 @@ export const notesRepository = {
     if (data.isPinned !== undefined) {
       fields.push('is_pinned = ?');
       values.push(data.isPinned ? 1 : 0);
+    }
+    if (data.reminderDate !== undefined) {
+      fields.push('reminder_date = ?');
+      values.push(data.reminderDate || null);
+    }
+    if (data.reminderNotificationId !== undefined) {
+      fields.push('reminder_notification_id = ?');
+      values.push(data.reminderNotificationId || null);
     }
 
     fields.push('updated_at = ?');
@@ -204,5 +218,27 @@ export const notesRepository = {
 
     const rows = await queryAll<NoteRow>(sql, params);
     return rows.map(mapRowToNote);
+  },
+
+  async getUpcomingReminders(propertyId?: UUID): Promise<Note[]> {
+    const now = getCurrentISODate();
+    let sql = 'SELECT * FROM notes WHERE reminder_date IS NOT NULL AND reminder_date >= ?';
+    const params: any[] = [now];
+
+    if (propertyId) {
+      sql += ' AND property_id = ?';
+      params.push(propertyId);
+    }
+
+    sql += ' ORDER BY reminder_date ASC';
+    const rows = await queryAll<NoteRow>(sql, params);
+    return rows.map(mapRowToNote);
+  },
+
+  async clearReminder(id: UUID): Promise<Note> {
+    return this.update(id, {
+      reminderDate: undefined,
+      reminderNotificationId: undefined,
+    });
   },
 };

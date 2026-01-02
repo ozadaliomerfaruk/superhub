@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Image, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Building2,
   DollarSign,
+  X,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../../navigation/types';
 import { Worker } from '../../types';
@@ -33,6 +34,7 @@ export function WorkersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const loadWorkers = useCallback(async () => {
     try {
@@ -94,7 +96,7 @@ export function WorkersScreen() {
             <IconButton
               icon={<Search size={20} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />}
               variant="default"
-              onPress={() => {}}
+              onPress={() => setShowSearch(!showSearch)}
             />
             <IconButton
               icon={<Plus size={20} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />}
@@ -103,6 +105,26 @@ export function WorkersScreen() {
             />
           </View>
         </View>
+
+        {/* Search Bar */}
+        {showSearch && (
+          <View className={`flex-row items-center rounded-xl px-3 py-2.5 ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+            <Search size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('worker.searchPlaceholder')}
+              placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
+              className={`flex-1 ml-2 text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Summary Stats */}
         {hasData && (
@@ -198,16 +220,19 @@ export function WorkersScreen() {
                     {/* Specialties */}
                     {worker.specialty.length > 0 && (
                       <View className="flex-row flex-wrap gap-1.5 mt-2">
-                        {worker.specialty.slice(0, 3).map((spec, index) => (
-                          <View
-                            key={index}
-                            className={`px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
-                          >
-                            <Text className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                              {spec}
-                            </Text>
-                          </View>
-                        ))}
+                        {worker.specialty.slice(0, 3).map((spec, index) => {
+                          const translatedSpec = t(`worker.specialties.${spec}`) || spec;
+                          return (
+                            <View
+                              key={index}
+                              className={`px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
+                            >
+                              <Text className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                {translatedSpec}
+                              </Text>
+                            </View>
+                          );
+                        })}
                         {worker.specialty.length > 3 && (
                           <View className={`px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                             <Text className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>

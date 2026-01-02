@@ -211,6 +211,31 @@ export function MeasurementsScreen() {
     }
   };
 
+  const handleDeletePhoto = (measurement: Measurement) => {
+    Alert.alert(
+      t('measurements.deletePhotoTitle'),
+      t('measurements.deletePhotoMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await measurementRepository.update(measurement.id, {
+                imageUri: undefined,
+              });
+              loadData();
+            } catch (error) {
+              console.error('Failed to delete photo:', error);
+              Alert.alert(t('common.error'), t('measurements.alerts.photoDeleteFailed'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
@@ -438,11 +463,20 @@ export function MeasurementsScreen() {
                   )}
 
                   {measurement.imageUri && (
-                    <Image
-                      source={{ uri: measurement.imageUri }}
-                      className="w-full h-32 rounded-xl mt-3"
-                      resizeMode="cover"
-                    />
+                    <View className="relative mt-3">
+                      <Image
+                        source={{ uri: measurement.imageUri }}
+                        className="w-full h-32 rounded-xl"
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        onPress={() => handleDeletePhoto(measurement)}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 items-center justify-center"
+                        activeOpacity={0.7}
+                      >
+                        <X size={16} color="#ffffff" />
+                      </TouchableOpacity>
+                    </View>
                   )}
 
                   {/* Actions */}

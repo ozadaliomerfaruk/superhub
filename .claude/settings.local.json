@@ -27,7 +27,8 @@
       "Bash(dir \"C:\\Users\\ozada\\apps\\ev-takip-v3\\src\\services\")",
       "Bash(dir:*)",
       "Bash(npx expo-doctor:*)",
-      "Bash(copy:*)"
+      "Bash(copy:*)",
+      "Bash(wc:*)"
     ]
   }
 }

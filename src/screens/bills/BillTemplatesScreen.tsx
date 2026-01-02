@@ -28,6 +28,7 @@ import {
   History,
   ChevronRight,
   Clock,
+  Filter,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { RootStackParamList } from '../../navigation/types';
@@ -79,6 +80,9 @@ export function BillTemplatesScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RecurringTemplateWithHistory | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<RecurringPaymentHistory[]>([]);
+  const [filteredPaymentHistory, setFilteredPaymentHistory] = useState<RecurringPaymentHistory[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   // Add payment modal state
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -221,11 +225,28 @@ export function BillTemplatesScreen() {
     try {
       const history = await recurringPaymentHistoryRepository.getByTemplateId(template.id);
       setPaymentHistory(history);
+
+      // Extract unique years from payment history
+      const years = [...new Set(history.map(p => new Date(p.paidDate).getFullYear()))].sort((a, b) => b - a);
+      setAvailableYears(years);
+      setSelectedYear(null); // Reset to show all
+      setFilteredPaymentHistory(history);
     } catch (error) {
       console.error('Failed to load history:', error);
       setPaymentHistory([]);
+      setFilteredPaymentHistory([]);
+      setAvailableYears([]);
     }
     setShowDetailModal(true);
+  };
+
+  const handleYearFilter = (year: number | null) => {
+    setSelectedYear(year);
+    if (year === null) {
+      setFilteredPaymentHistory(paymentHistory);
+    } else {
+      setFilteredPaymentHistory(paymentHistory.filter(p => new Date(p.paidDate).getFullYear() === year));
+    }
   };
 
   const handleAddPayment = async () => {
@@ -254,6 +275,16 @@ export function BillTemplatesScreen() {
         recurringTemplateRepository.getByIdWithHistory(selectedTemplate.id),
       ]);
       setPaymentHistory(history);
+
+      // Update available years and filtered history
+      const years = [...new Set(history.map(p => new Date(p.paidDate).getFullYear()))].sort((a, b) => b - a);
+      setAvailableYears(years);
+      if (selectedYear === null) {
+        setFilteredPaymentHistory(history);
+      } else {
+        setFilteredPaymentHistory(history.filter(p => new Date(p.paidDate).getFullYear() === selectedYear));
+      }
+
       if (updated) setSelectedTemplate(updated);
 
       // Reset form
@@ -290,6 +321,20 @@ export function BillTemplatesScreen() {
                   recurringTemplateRepository.getByIdWithHistory(selectedTemplate.id),
                 ]);
                 setPaymentHistory(history);
+
+                // Update available years and filtered history
+                const years = [...new Set(history.map(p => new Date(p.paidDate).getFullYear()))].sort((a, b) => b - a);
+                setAvailableYears(years);
+                // If selected year no longer has any payments, reset to all
+                if (selectedYear !== null && !years.includes(selectedYear)) {
+                  setSelectedYear(null);
+                  setFilteredPaymentHistory(history);
+                } else if (selectedYear === null) {
+                  setFilteredPaymentHistory(history);
+                } else {
+                  setFilteredPaymentHistory(history.filter(p => new Date(p.paidDate).getFullYear() === selectedYear));
+                }
+
                 if (updated) setSelectedTemplate(updated);
               }
               loadData();
@@ -690,6 +735,70 @@ export function BillTemplatesScreen() {
                 </View>
               </View>
 
+              {/* Total Payment Summary */}
+              {paymentHistory.length > 0 && (
+                <View className="px-5 py-3">
+                  <View className={`flex-row items-center justify-between px-4 py-3 rounded-xl ${isDark ? 'bg-primary-900/30' : 'bg-primary-50'}`}>
+                    <View className="flex-row items-center">
+                      <DollarSign size={18} color={COLORS.primary[600]} />
+                      <Text className={`text-sm font-medium ml-2 ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>
+                        {t('bills.totalPaid')} {selectedYear !== null && `(${selectedYear})`}
+                      </Text>
+                    </View>
+                    <Text className={`text-lg font-bold ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>
+                      {formatCurrency(filteredPaymentHistory.reduce((sum, p) => sum + p.amount, 0))}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Year Filter */}
+              {availableYears.length > 1 && (
+                <View className="px-5 pb-2">
+                  <View className="flex-row items-center mb-2">
+                    <Filter size={14} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
+                    <Text className={`text-xs font-medium ml-1.5 uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {t('bills.filterByYear')}
+                    </Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => handleYearFilter(null)}
+                      className={`px-4 py-2 rounded-full ${
+                        selectedYear === null
+                          ? 'bg-primary-500'
+                          : isDark ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'
+                      }`}
+                      activeOpacity={0.7}
+                    >
+                      <Text className={`text-sm font-medium ${
+                        selectedYear === null ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
+                      }`}>
+                        {t('common.all')}
+                      </Text>
+                    </TouchableOpacity>
+                    {availableYears.map((year) => (
+                      <TouchableOpacity
+                        key={year}
+                        onPress={() => handleYearFilter(year)}
+                        className={`px-4 py-2 rounded-full ${
+                          selectedYear === year
+                            ? 'bg-primary-500'
+                            : isDark ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'
+                        }`}
+                        activeOpacity={0.7}
+                      >
+                        <Text className={`text-sm font-medium ${
+                          selectedYear === year ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-600'
+                        }`}>
+                          {year}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               {/* Add Payment Button */}
               <View className="px-5 py-4">
                 <Button
@@ -706,7 +815,7 @@ export function BillTemplatesScreen() {
               {/* Payment History */}
               <View className="px-5 pb-8">
                 <Text className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {t('bills.paymentHistory')} ({paymentHistory.length})
+                  {t('bills.paymentHistory')} ({filteredPaymentHistory.length}{selectedYear !== null ? ` / ${paymentHistory.length}` : ''})
                 </Text>
 
                 {paymentHistory.length === 0 ? (
@@ -719,9 +828,16 @@ export function BillTemplatesScreen() {
                       </Text>
                     </View>
                   </Card>
+                ) : filteredPaymentHistory.length === 0 ? (
+                  <Card variant="filled" padding="lg">
+                    <View className="items-center py-4">
+                      <Filter size={32} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
+                      <Text className={`font-medium mt-3 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('bills.noPaymentsInPeriod')}</Text>
+                    </View>
+                  </Card>
                 ) : (
                   <View className="gap-2">
-                    {paymentHistory.map((payment) => (
+                    {filteredPaymentHistory.map((payment) => (
                       <Card key={payment.id} variant="default" padding="md">
                         <View className="flex-row items-center justify-between">
                           <View className="flex-1">
@@ -824,6 +940,7 @@ export function BillTemplatesScreen() {
                         display="spinner"
                         onChange={onDateChange}
                         maximumDate={new Date()}
+                        textColor={isDark ? '#ffffff' : '#1e293b'}
                       />
                     ) : showDatePicker && (
                       <DateTimePicker

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import {
   X,
   Camera,
@@ -26,7 +28,7 @@ import { AssetCategory, Room } from '../../types';
 import { assetRepository, roomRepository } from '../../services/database';
 import { Button, Input, IconButton, TextArea, DatePickerModal } from '../../components/ui';
 import { COLORS, ASSET_CATEGORIES } from '../../constants/theme';
-import { format } from 'date-fns';
+import { format, formatISO } from 'date-fns';
 import { useTranslation, useTheme } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -77,18 +79,18 @@ export function AddAssetScreen() {
   const [tempPurchaseDate, setTempPurchaseDate] = useState<Date>(new Date());
   const [tempWarrantyDate, setTempWarrantyDate] = useState<Date>(new Date());
 
-  useEffect(() => {
-    loadRooms();
-  }, []);
-
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     try {
       const roomsData = await roomRepository.getByPropertyId(route.params.propertyId);
       setRooms(roomsData);
     } catch (error) {
       console.error('Failed to load rooms:', error);
     }
-  };
+  }, [route.params.propertyId]);
+
+  useEffect(() => {
+    loadRooms();
+  }, [loadRooms]);
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -144,9 +146,9 @@ export function AddAssetScreen() {
         brand: brand.trim() || undefined,
         model: model.trim() || undefined,
         serialNumber: serialNumber.trim() || undefined,
-        purchaseDate: purchaseDate?.toISOString(),
+        purchaseDate: purchaseDate ? formatISO(purchaseDate, { representation: 'date' }) : undefined,
         purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
-        warrantyEndDate: warrantyEndDate?.toISOString(),
+        warrantyEndDate: warrantyEndDate ? formatISO(warrantyEndDate, { representation: 'date' }) : undefined,
         notes: notes.trim() || undefined,
         imageUri,
       });
@@ -440,12 +442,12 @@ export function AddAssetScreen() {
       {/* Purchase Date Picker Modal */}
       <Modal visible={showPurchaseDatePicker} transparent animationType="slide">
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl">
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
+          <View className={`rounded-t-3xl ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
               <TouchableOpacity onPress={() => setShowPurchaseDatePicker(false)}>
-                <Text className="text-base text-slate-600">{t('common.cancel')}</Text>
+                <Text className={`text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text className="text-base font-semibold text-slate-900">{t('asset.purchaseDate')}</Text>
+              <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('asset.purchaseDate')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setPurchaseDate(tempPurchaseDate);
@@ -463,6 +465,7 @@ export function AddAssetScreen() {
                 if (date) setTempPurchaseDate(date);
               }}
               style={{ height: 200 }}
+              textColor={isDark ? '#ffffff' : '#1e293b'}
             />
           </View>
         </View>
@@ -471,12 +474,12 @@ export function AddAssetScreen() {
       {/* Warranty Date Picker Modal */}
       <Modal visible={showWarrantyDatePicker} transparent animationType="slide">
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl">
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
+          <View className={`rounded-t-3xl ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            <View className={`flex-row items-center justify-between px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
               <TouchableOpacity onPress={() => setShowWarrantyDatePicker(false)}>
-                <Text className="text-base text-slate-600">{t('common.cancel')}</Text>
+                <Text className={`text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text className="text-base font-semibold text-slate-900">{t('asset.warrantyEndDate')}</Text>
+              <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('asset.warrantyEndDate')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setWarrantyEndDate(tempWarrantyDate);
@@ -494,6 +497,7 @@ export function AddAssetScreen() {
                 if (date) setTempWarrantyDate(date);
               }}
               style={{ height: 200 }}
+              textColor={isDark ? '#ffffff' : '#1e293b'}
             />
           </View>
         </View>

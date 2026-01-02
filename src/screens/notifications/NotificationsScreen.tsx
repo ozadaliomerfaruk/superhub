@@ -65,7 +65,7 @@ export function NotificationsScreen() {
               id: `task-${task.id}`,
               type: 'maintenance_overdue',
               title: task.title,
-              description: `Overdue by ${Math.abs(daysUntilDue)} days`,
+              description: t('notifications.overdueBy', { days: Math.abs(daysUntilDue) }),
               date: task.nextDueDate,
               propertyId: property.id,
               propertyName: property.name,
@@ -79,7 +79,7 @@ export function NotificationsScreen() {
               id: `task-${task.id}`,
               type: 'maintenance_due',
               title: task.title,
-              description: daysUntilDue === 0 ? 'Due today' : `Due in ${daysUntilDue} days`,
+              description: daysUntilDue === 0 ? t('notifications.dueToday') : t('notifications.dueInDays', { days: daysUntilDue }),
               date: task.nextDueDate,
               propertyId: property.id,
               propertyName: property.name,
@@ -102,8 +102,8 @@ export function NotificationsScreen() {
             allNotifications.push({
               id: `warranty-${asset.id}`,
               type: 'warranty_expiring',
-              title: `${asset.name} warranty`,
-              description: daysUntilExpiry === 0 ? 'Expires today' : `Expires in ${daysUntilExpiry} days`,
+              title: `${asset.name} ${t('notifications.warranty')}`,
+              description: daysUntilExpiry === 0 ? t('notifications.expiresToday') : t('notifications.expiresInDays', { days: daysUntilExpiry }),
               date: asset.warrantyEndDate,
               propertyId: property.id,
               propertyName: property.name,
@@ -131,7 +131,7 @@ export function NotificationsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -257,7 +257,7 @@ export function NotificationsScreen() {
                             {notification.title}
                           </Text>
                           {notification.priority === 'high' && (
-                            <Badge label="Urgent" variant="error" size="sm" />
+                            <Badge label={t('common.urgent')} variant="error" size="sm" />
                           )}
                         </View>
                         <Text className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>

@@ -49,7 +49,13 @@
     "invalidAssetAmounts": "Geçersiz Varlık Tutarları",
     "assetAmountsExceed": "Varlık tutarları toplamı",
     "totalExpenseAmount": "toplam gider tutarını aşıyor",
-    "tryDifferentSearch": "Farklı bir arama veya filtre deneyin"
+    "tryDifferentSearch": "Farklı bir arama veya filtre deneyin",
+    "pending": "bekleyen",
+    "noPendingNotifications": "Harika! Bekleyen bildiriminiz yok.",
+    "urgent": "Acil",
+    "item": "öğe",
+    "items": "öğe",
+    "requiresAttention": "Dikkatinizi gerektiriyor"
   },
   "tabs": {
     "home": "Ana Sayfa",
@@ -132,8 +138,9 @@
     "addFirstAsset": "İlk Varlığı Ekle",
     "edit": "Odayı Düzenle",
     "delete": "Odayı Sil",
-    "deleteConfirm": "Bu odayı silmek istediğinizden emin misiniz? Bu odadaki varlıklar atanmamış olarak kalacaktır. Bu işlem geri alınamaz.",
+    "deleteConfirmation": "Bu odayı silmek istediğinizden emin misiniz? Bu odadaki varlıklar atanmamış olarak kalacaktır. Bu işlem geri alınamaz.",
     "name": "Oda Adı",
+    "namePlaceholder": "örn. Ebeveyn Yatak Odası, Mutfak",
     "type": "Oda Tipi",
     "noRooms": "Henüz oda yok",
     "noRoomsDescription": "Varlıklarınızı ve giderlerinizi alanlara göre düzenlemek için oda ekleyin",
@@ -322,6 +329,7 @@
     "title": "Ustalar",
     "subtitle": "Müteahhitler ve servis sağlayıcılar",
     "add": "Usta Ekle",
+    "searchPlaceholder": "Usta ara...",
     "specialties": {
       "Plumber": "Tesisatçı",
       "Electrician": "Elektrikçi",
@@ -422,6 +430,20 @@
       "poolService": "Havuz Bakımı",
       "locksmith": "Çilingir",
       "other": "Diğer"
+    },
+    "workerNotes": {
+      "title": "Tarihli Notlar",
+      "addNote": "Not Ekle",
+      "editNote": "Notu Düzenle",
+      "deleteNote": "Notu Sil",
+      "noNotes": "Henüz not eklenmemiş",
+      "noNotesDescription": "Bu usta hakkında tarihli notlar ekleyebilirsiniz",
+      "noteContent": "Not İçeriği",
+      "notePlaceholder": "Notunuzu yazın...",
+      "noteDate": "Tarih",
+      "deleteConfirm": "Bu notu silmek istediğinizden emin misiniz?",
+      "contentRequired": "Lütfen not içeriği girin",
+      "saveError": "Not kaydedilemedi"
     }
   },
   "quickAdd": {
@@ -453,7 +475,7 @@
     "assets": "Varlıklar",
     "docs": "Belgeler",
     "renovate": "Tadilat",
-    "bills": "Faturalar",
+    "bills": "Düzenli Ödemeler",
     "notes": "Notlar"
   },
   "emergency": {
@@ -494,15 +516,44 @@
     "title": "Ara",
     "placeholder": "Mülk, oda, varlık ara...",
     "noResults": "Sonuç bulunamadı",
-    "recentSearches": "Son Aramalar"
+    "recentSearches": "Son Aramalar",
+    "categories": {
+      "all": "Tümü",
+      "properties": "Mülkler",
+      "rooms": "Odalar",
+      "assets": "Varlıklar",
+      "expenses": "Giderler",
+      "workers": "Ustalar"
+    },
+    "amountRanges": {
+      "all": "Tüm Tutarlar",
+      "under100": "100₺ Altı",
+      "100-500": "100₺ - 500₺",
+      "500-1000": "500₺ - 1.000₺",
+      "over1000": "1.000₺ Üzeri"
+    },
+    "dateRanges": {
+      "all": "Tüm Zamanlar",
+      "today": "Bugün",
+      "week": "Bu Hafta",
+      "month": "Bu Ay",
+      "year": "Bu Yıl"
+    }
   },
   "notifications": {
     "title": "Bildirimler",
     "empty": "Bildirim yok",
-    "markAllRead": "Tümünü Okundu İşaretle"
+    "markAllRead": "Tümünü Okundu İşaretle",
+    "pending": "bekleyen",
+    "overdueBy": "{{days}} gün gecikmiş",
+    "dueToday": "Bugün yapılmalı",
+    "dueInDays": "{{days}} gün içinde",
+    "warranty": "garanti",
+    "expiresToday": "Bugün sona eriyor",
+    "expiresInDays": "{{days}} gün içinde sona erecek"
   },
   "reports": {
-    "title": "Raporlar",
+    "title": "Raporlar ve Analizler",
     "thisMonth": "Bu Ay",
     "lastMonth": "Geçen Ay",
     "thisYear": "Bu Yıl",
@@ -510,7 +561,20 @@
     "byCategory": "Kategoriye Göre",
     "byProperty": "Mülke Göre",
     "trend": "Trend",
-    "export": "Raporu Dışa Aktar"
+    "export": "Raporu Dışa Aktar",
+    "properties": "Mülkler",
+    "allProperties": "Tüm Mülkler",
+    "totalExpenses": "toplam gider",
+    "monthlyTrend": "Aylık Harcama Trendi",
+    "spendingByCategory": "Kategoriye Göre Harcama",
+    "noExpensesThisMonth": "Bu ay gider yok",
+    "quickStats": "Hızlı İstatistikler",
+    "avgExpense": "Ort. Gider",
+    "totalAllTime": "Toplam (Tüm Zamanlar)",
+    "largestExpense": "En Büyük Gider",
+    "vsLastMonth": "geçen aya göre",
+    "expense": "gider",
+    "expenses": "gider"
   },
   "timeline": {
     "title": "Zaman Çizelgesi",
@@ -638,6 +702,8 @@
       "lowDesc": "En küçük dosya boyutu"
     },
     "recommended": "Önerilen",
+    "manageCategories": "Kategorileri Yönet",
+    "manageCategoriesSubtitle": "Gider kategorileri ve tiplerini düzenle",
     "dateFormatOptions": {
       "dec31": "31 Ara 2024",
       "december31": "Aralık 31, 2024"
@@ -760,6 +826,9 @@
     "deleteRecordMessage": "Bu ödeme kaydını silmek istediğinizden emin misiniz?",
     "amountPaid": "Ödenen Tutar",
     "paymentDate": "Ödeme Tarihi",
+    "totalPaid": "Toplam Ödenen",
+    "filterByYear": "Yıla Göre Filtrele",
+    "noPaymentsInPeriod": "Bu dönemde ödeme yok",
     "frequencies": {
       "weekly": "Haftalık",
       "biweekly": "İki Haftada Bir",
@@ -844,10 +913,13 @@
       "enterDimension": "Lütfen en az bir boyut girin",
       "saveFailed": "Ölçü kaydedilemedi",
       "deleteFailed": "Ölçü silinemedi",
-      "photoFailed": "Fotoğraf eklenemedi"
+      "photoFailed": "Fotoğraf eklenemedi",
+      "photoDeleteFailed": "Fotoğraf silinemedi"
     },
     "deleteTitle": "Ölçüyü Sil",
-    "deleteMessage": "\"{{name}}\" silinsin mi?"
+    "deleteMessage": "\"{{name}}\" silinsin mi?",
+    "deletePhotoTitle": "Fotoğrafı Sil",
+    "deletePhotoMessage": "Bu fotoğrafı silmek istediğinizden emin misiniz?"
   },
   "notes": {
     "title": "Notlar",
@@ -857,10 +929,21 @@
     "writeNote": "Notunuzu yazın...",
     "pinned": "Sabitlenmiş",
     "otherNotes": "Diğer Notlar",
+    "addReminder": "Hatırlatıcı ekle",
+    "reminder": "Hatırlatıcı",
+    "setReminder": "Hatırlatıcı Ayarla",
+    "reminderSet": "Hatırlatıcı ayarlandı",
+    "removeReminder": "Hatırlatıcıyı Kaldır",
+    "reminderDate": "Hatırlatma Tarihi",
+    "reminderTime": "Hatırlatma Saati",
+    "withReminder": "Hatırlatıcılı",
     "alerts": {
       "createFailed": "Not oluşturulamadı",
       "updateFailed": "Not güncellenemedi",
-      "deleteFailed": "Not silinemedi"
+      "deleteFailed": "Not silinemedi",
+      "reminderSetSuccess": "Hatırlatıcı ayarlandı",
+      "reminderRemoved": "Hatırlatıcı kaldırıldı",
+      "reminderFailed": "Hatırlatıcı ayarlanamadı"
     },
     "deleteTitle": "Notu Sil",
     "deleteMessage": "Bu notu silmek istediğinizden emin misiniz?"
@@ -1049,6 +1132,31 @@
     "dragToCompare": "Karşılaştırmak için kaydırıcıyı sürükleyin",
     "deleteRenovation": "Tadilatı Sil",
     "deleteConfirm": "\"{{title}}\" silinsin mi?",
+    "room": "Oda",
+    "selectRoom": "Oda Seçin",
+    "noRoom": "Oda belirtilmedi",
+    "expenseType": "Gider Tipi",
+    "selectExpenseType": "Gider Tipi Seçin",
+    "workers": "Ustalar",
+    "addWorker": "Usta Ekle",
+    "noWorkers": "Henüz usta eklenmedi",
+    "selectWorker": "Usta Seçin",
+    "workerRole": "Rol (opsiyonel)",
+    "assets": "Varlıklar",
+    "addAsset": "Varlık Ekle",
+    "noAssets": "Henüz varlık eklenmedi",
+    "selectAsset": "Varlık Seçin",
+    "assetNotes": "Not (opsiyonel)",
+    "costs": "Maliyet Kalemleri",
+    "addCost": "Maliyet Ekle",
+    "noCosts": "Henüz maliyet eklenmedi",
+    "costDescription": "Açıklama",
+    "costAmount": "Tutar",
+    "costCategory": "Kategori",
+    "costDate": "Tarih",
+    "totalCost": "Toplam Maliyet",
+    "details": "Detaylar",
+    "editRenovation": "Tadilatı Düzenle",
     "alerts": {
       "enterTitle": "Lütfen bir başlık girin",
       "addBeforePhoto": "Lütfen \"öncesi\" fotoğrafı ekleyin",
@@ -1056,7 +1164,15 @@
       "cameraRequired": "Kamera izni gerekli",
       "createFailed": "Tadilat oluşturulamadı",
       "addPhotoFailed": "Sonrası fotoğrafı eklenemedi",
-      "deleteFailed": "Tadilat silinemedi"
+      "deleteFailed": "Tadilat silinemedi",
+      "workerAddFailed": "Usta eklenemedi",
+      "workerRemoveFailed": "Usta kaldırılamadı",
+      "assetAddFailed": "Varlık eklenemedi",
+      "assetRemoveFailed": "Varlık kaldırılamadı",
+      "costAddFailed": "Maliyet eklenemedi",
+      "costRemoveFailed": "Maliyet kaldırılamadı",
+      "enterCostDescription": "Lütfen maliyet açıklaması girin",
+      "enterValidAmount": "Lütfen geçerli bir tutar girin"
     }
   },
   "giderCategories": {
@@ -1072,5 +1188,26 @@
     "garden": "Bahçe",
     "security": "Güvenlik",
     "other": "Diğer"
+  },
+  "manageCategories": {
+    "title": "Kategorileri Yönet",
+    "expenseTypes": "Gider Tipleri",
+    "expenseCategories": "Gider Kategorileri",
+    "billCategories": "Fatura Kategorileri",
+    "noCategories": "Kategori bulunamadı",
+    "addFirstCategory": "İlk kategorinizi eklemek için + butonuna dokunun",
+    "addCategory": "Kategori Ekle",
+    "editCategory": "Kategoriyi Düzenle",
+    "deleteCategory": "Kategoriyi Sil",
+    "deleteConfirm": "\"{{name}}\" kategorisini silmek istediğinizden emin misiniz?",
+    "categoryName": "Kategori Adı",
+    "namePlaceholder": "Kategori adını girin",
+    "categoryColor": "Kategori Rengi",
+    "nameRequired": "Lütfen kategori adı girin",
+    "saveError": "Kategori kaydedilemedi",
+    "default": "Varsayılan",
+    "cannotEdit": "Düzenlenemez",
+    "cannotDelete": "Silinemez",
+    "defaultCategoryInfo": "Varsayılan kategoriler düzenlenemez veya silinemez"
   }
 }

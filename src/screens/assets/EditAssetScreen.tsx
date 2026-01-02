@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ import { Asset, AssetCategory, Room } from '../../types';
 import { assetRepository, roomRepository } from '../../services/database';
 import { Button, Input, IconButton, TextArea } from '../../components/ui';
 import { COLORS, ASSET_CATEGORIES } from '../../constants/theme';
-import { format } from 'date-fns';
+import { format, formatISO } from 'date-fns';
 import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -82,11 +82,7 @@ export function EditAssetScreen() {
   const [tempPurchaseDate, setTempPurchaseDate] = useState<Date>(new Date());
   const [tempWarrantyDate, setTempWarrantyDate] = useState<Date>(new Date());
 
-  useEffect(() => {
-    loadAsset();
-  }, [assetId]);
-
-  const loadAsset = async () => {
+  const loadAsset = useCallback(async () => {
     try {
       const asset = await assetRepository.getById(assetId);
       if (asset) {
@@ -114,7 +110,11 @@ export function EditAssetScreen() {
     } finally {
       setInitialLoading(false);
     }
-  };
+  }, [assetId, navigation, t]);
+
+  useEffect(() => {
+    loadAsset();
+  }, [loadAsset]);
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -169,9 +169,9 @@ export function EditAssetScreen() {
         brand: brand.trim() || undefined,
         model: model.trim() || undefined,
         serialNumber: serialNumber.trim() || undefined,
-        purchaseDate: purchaseDate?.toISOString(),
+        purchaseDate: purchaseDate ? formatISO(purchaseDate, { representation: 'date' }) : undefined,
         purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
-        warrantyEndDate: warrantyEndDate?.toISOString(),
+        warrantyEndDate: warrantyEndDate ? formatISO(warrantyEndDate, { representation: 'date' }) : undefined,
         notes: notes.trim() || undefined,
         imageUri,
       });
@@ -494,6 +494,7 @@ export function EditAssetScreen() {
                 if (date) setTempPurchaseDate(date);
               }}
               style={{ height: 200 }}
+              textColor={isDark ? '#ffffff' : '#1e293b'}
             />
           </View>
         </View>
@@ -525,6 +526,7 @@ export function EditAssetScreen() {
                 if (date) setTempWarrantyDate(date);
               }}
               style={{ height: 200 }}
+              textColor={isDark ? '#ffffff' : '#1e293b'}
             />
           </View>
         </View>

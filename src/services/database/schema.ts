@@ -1,7 +1,7 @@
 // Database Schema Definitions
 // All tables use UUID as primary keys for future data merge scenarios
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 6;
 
 export const CREATE_TABLES_SQL = `
 -- Properties table
@@ -259,10 +259,56 @@ CREATE TABLE IF NOT EXISTS renovations (
   after_image_uri TEXT,
   completed_date TEXT,
   cost REAL,
+  expense_type TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
   FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+);
+
+-- Renovation workers junction table
+CREATE TABLE IF NOT EXISTS renovation_workers (
+  id TEXT PRIMARY KEY,
+  renovation_id TEXT NOT NULL,
+  worker_id TEXT NOT NULL,
+  role TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE,
+  FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+-- Renovation assets junction table
+CREATE TABLE IF NOT EXISTS renovation_assets (
+  id TEXT PRIMARY KEY,
+  renovation_id TEXT NOT NULL,
+  asset_id TEXT NOT NULL,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE,
+  FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+);
+
+-- Renovation costs table (individual cost items)
+CREATE TABLE IF NOT EXISTS renovation_costs (
+  id TEXT PRIMARY KEY,
+  renovation_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  amount REAL NOT NULL,
+  category TEXT,
+  date TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE
+);
+
+-- Worker notes table (tarihli notlar)
+CREATE TABLE IF NOT EXISTS worker_notes (
+  id TEXT PRIMARY KEY,
+  worker_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  date TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
 );
 
 -- Notes table
@@ -274,6 +320,8 @@ CREATE TABLE IF NOT EXISTS notes (
   worker_id TEXT,
   content TEXT NOT NULL,
   is_pinned INTEGER NOT NULL DEFAULT 0,
+  reminder_date TEXT,
+  reminder_notification_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
@@ -291,6 +339,19 @@ CREATE TABLE IF NOT EXISTS app_settings (
   biometric_enabled INTEGER NOT NULL DEFAULT 0,
   photo_quality TEXT NOT NULL DEFAULT 'high',
   encrypt_exports INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Custom categories table for user-defined expense categories and types
+CREATE TABLE IF NOT EXISTS custom_categories (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  name TEXT NOT NULL,
+  icon TEXT,
+  color TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -326,12 +387,24 @@ CREATE INDEX IF NOT EXISTS idx_maintenance_completions_worker ON maintenance_com
 CREATE INDEX IF NOT EXISTS idx_maintenance_completions_date ON maintenance_completions(completed_date);
 CREATE INDEX IF NOT EXISTS idx_recurring_payment_history_template ON recurring_payment_history(template_id);
 CREATE INDEX IF NOT EXISTS idx_recurring_payment_history_date ON recurring_payment_history(paid_date);
+CREATE INDEX IF NOT EXISTS idx_renovation_workers_renovation ON renovation_workers(renovation_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_workers_worker ON renovation_workers(worker_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_assets_renovation ON renovation_assets(renovation_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_assets_asset ON renovation_assets(asset_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_costs_renovation ON renovation_costs(renovation_id);
+CREATE INDEX IF NOT EXISTS idx_worker_notes_worker ON worker_notes(worker_id);
+CREATE INDEX IF NOT EXISTS idx_custom_categories_type ON custom_categories(type);
 `;
 
 export const DROP_TABLES_SQL = `
+DROP TABLE IF EXISTS custom_categories;
 DROP TABLE IF EXISTS recurring_payment_history;
 DROP TABLE IF EXISTS maintenance_completions;
 DROP TABLE IF EXISTS expense_assets;
+DROP TABLE IF EXISTS renovation_workers;
+DROP TABLE IF EXISTS renovation_assets;
+DROP TABLE IF EXISTS renovation_costs;
+DROP TABLE IF EXISTS worker_notes;
 DROP TABLE IF EXISTS renovations;
 DROP TABLE IF EXISTS notes;
 DROP TABLE IF EXISTS wifi_info;
@@ -373,4 +446,87 @@ CREATE TABLE IF NOT EXISTS maintenance_completions (
 CREATE INDEX IF NOT EXISTS idx_maintenance_completions_task ON maintenance_completions(task_id);
 CREATE INDEX IF NOT EXISTS idx_maintenance_completions_worker ON maintenance_completions(worker_id);
 CREATE INDEX IF NOT EXISTS idx_maintenance_completions_date ON maintenance_completions(completed_date);
+`;
+
+// Migration SQL for updating from version 4 to version 5
+export const MIGRATION_V4_TO_V5 = `
+-- Add expense_type column to renovations
+ALTER TABLE renovations ADD COLUMN expense_type TEXT;
+
+-- Add reminder columns to notes
+ALTER TABLE notes ADD COLUMN reminder_date TEXT;
+ALTER TABLE notes ADD COLUMN reminder_notification_id TEXT;
+
+-- Create renovation_workers table
+CREATE TABLE IF NOT EXISTS renovation_workers (
+  id TEXT PRIMARY KEY,
+  renovation_id TEXT NOT NULL,
+  worker_id TEXT NOT NULL,
+  role TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE,
+  FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+-- Create renovation_assets table
+CREATE TABLE IF NOT EXISTS renovation_assets (
+  id TEXT PRIMARY KEY,
+  renovation_id TEXT NOT NULL,
+  asset_id TEXT NOT NULL,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE,
+  FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+);
+
+-- Create renovation_costs table
+CREATE TABLE IF NOT EXISTS renovation_costs (
+  id TEXT PRIMARY KEY,
+  renovation_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  amount REAL NOT NULL,
+  category TEXT,
+  date TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (renovation_id) REFERENCES renovations(id) ON DELETE CASCADE
+);
+
+-- Create worker_notes table
+CREATE TABLE IF NOT EXISTS worker_notes (
+  id TEXT PRIMARY KEY,
+  worker_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  date TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_renovation_workers_renovation ON renovation_workers(renovation_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_workers_worker ON renovation_workers(worker_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_assets_renovation ON renovation_assets(renovation_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_assets_asset ON renovation_assets(asset_id);
+CREATE INDEX IF NOT EXISTS idx_renovation_costs_renovation ON renovation_costs(renovation_id);
+CREATE INDEX IF NOT EXISTS idx_worker_notes_worker ON worker_notes(worker_id);
+CREATE INDEX IF NOT EXISTS idx_notes_reminder ON notes(reminder_date);
+`;
+
+// Migration SQL for updating from version 5 to version 6
+export const MIGRATION_V5_TO_V6 = `
+-- Create custom_categories table for user-defined categories
+CREATE TABLE IF NOT EXISTS custom_categories (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  name TEXT NOT NULL,
+  icon TEXT,
+  color TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_custom_categories_type ON custom_categories(type);
 `;

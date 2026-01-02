@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -182,7 +182,7 @@ const TimelineItemCard = ({
   const pressAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    const animations = Animated.parallel([
       Animated.spring(translateX, {
         toValue: 0,
         delay: index * 50,
@@ -196,8 +196,15 @@ const TimelineItemCard = ({
         duration: 250,
         useNativeDriver: true,
       }),
-    ]).start();
-  }, []);
+    ]);
+
+    animations.start();
+
+    // Cleanup: stop animations when component unmounts
+    return () => {
+      animations.stop();
+    };
+  }, [index, translateX, opacity]);
 
   const handlePressIn = () => {
     Animated.spring(pressAnim, {
@@ -295,7 +302,7 @@ const TimelineItemCard = ({
                         style={{ backgroundColor: `${statusColor}15` }}
                       >
                         <Text className="text-xs font-semibold" style={{ color: statusColor }}>
-                          {EXPENSE_TYPES[item.expenseType || 'other']?.label || 'Other'}
+                          {t(`expense.types.${item.expenseType || 'other'}`)}
                         </Text>
                       </View>
                     ) : (
@@ -450,23 +457,27 @@ export function TimelineScreen() {
     return true;
   });
 
-  // Group items by date
-  const groupedItems: GroupedItems = filteredItems.reduce((groups, item) => {
-    const dateKey = item.date.split('T')[0];
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(item);
-    return groups;
-  }, {} as GroupedItems);
+  // Group items by date - memoized to prevent unnecessary recalculations
+  const groupedItems = useMemo<GroupedItems>(() => {
+    return filteredItems.reduce((groups, item) => {
+      const dateKey = item.date.split('T')[0];
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(item);
+      return groups;
+    }, {} as GroupedItems);
+  }, [filteredItems]);
 
-  // Sort dates
-  const sortedDates = Object.keys(groupedItems).sort((a, b) => {
-    if (activeFilter === 'upcoming') {
-      return new Date(a).getTime() - new Date(b).getTime();
-    }
-    return new Date(b).getTime() - new Date(a).getTime();
-  });
+  // Sort dates - memoized
+  const sortedDates = useMemo(() => {
+    return Object.keys(groupedItems).sort((a, b) => {
+      if (activeFilter === 'upcoming') {
+        return new Date(a).getTime() - new Date(b).getTime();
+      }
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+  }, [groupedItems, activeFilter]);
 
   // Calculate stats
   const thisMonthTotal = items

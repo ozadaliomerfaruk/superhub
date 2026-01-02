@@ -33,11 +33,12 @@ import { StorageBoxesScreen } from '../screens/storage-boxes';
 import { WiFiInfoScreen } from '../screens/wifi-info';
 import { SearchScreen } from '../screens/search';
 import { DocumentsScreen } from '../screens/documents';
-import { RenovationsScreen } from '../screens/renovations';
+import { RenovationsScreen, RenovationDetailScreen } from '../screens/renovations';
 import { BillTemplatesScreen } from '../screens/bills';
 import { NotificationsScreen } from '../screens/notifications';
 import { NotesScreen } from '../screens/notes';
 import { ReportsScreen } from '../screens/reports';
+import { ManageCategoriesScreen } from '../screens/settings/ManageCategoriesScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -128,12 +129,14 @@ export function RootNavigator() {
       <Stack.Screen name="WiFiInfo" component={WiFiInfoScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
       <Stack.Screen name="Renovations" component={RenovationsScreen} />
+      <Stack.Screen name="RenovationDetail" component={RenovationDetailScreen} />
       <Stack.Screen name="BillTemplates" component={BillTemplatesScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="PropertyExpenses" component={PropertyExpensesScreen} />
       <Stack.Screen name="PropertyAssets" component={PropertyAssetsScreen} />
       <Stack.Screen name="Notes" component={NotesScreen} />
       <Stack.Screen name="Reports" component={ReportsScreen} />
+      <Stack.Screen name="ManageCategories" component={ManageCategoriesScreen} />
     </Stack.Navigator>
   );
 }

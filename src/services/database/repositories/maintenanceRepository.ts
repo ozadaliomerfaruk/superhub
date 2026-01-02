@@ -53,6 +53,13 @@ function mapRowToMaintenanceWithWorker(row: MaintenanceWithWorkerRow): Maintenan
 }
 
 export const maintenanceRepository = {
+  async getAll(): Promise<MaintenanceTask[]> {
+    const rows = await queryAll<MaintenanceRow>(
+      'SELECT * FROM maintenance_tasks ORDER BY next_due_date ASC'
+    );
+    return rows.map(mapRowToMaintenance);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<MaintenanceTaskWithWorker[]> {
     const rows = await queryAll<MaintenanceWithWorkerRow>(
       `SELECT mt.*,

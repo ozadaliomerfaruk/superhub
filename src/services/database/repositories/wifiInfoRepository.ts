@@ -28,6 +28,13 @@ function mapRowToWiFiInfo(row: WiFiInfoRow): WiFiInfo {
 }
 
 export const wifiInfoRepository = {
+  async getAll(): Promise<WiFiInfo[]> {
+    const rows = await queryAll<WiFiInfoRow>(
+      'SELECT * FROM wifi_info ORDER BY is_guest ASC, network_name ASC'
+    );
+    return rows.map(mapRowToWiFiInfo);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<WiFiInfo[]> {
     const rows = await queryAll<WiFiInfoRow>(
       'SELECT * FROM wifi_info WHERE property_id = ? ORDER BY is_guest ASC, network_name ASC',

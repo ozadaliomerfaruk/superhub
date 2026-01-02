@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -50,11 +50,7 @@ export function EditWorkerScreen() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  useEffect(() => {
-    loadWorker();
-  }, [workerId]);
-
-  const loadWorker = async () => {
+  const loadWorker = useCallback(async () => {
     try {
       const worker = await workerRepository.getById(workerId);
       if (worker) {
@@ -74,7 +70,11 @@ export function EditWorkerScreen() {
     } finally {
       setInitialLoading(false);
     }
-  };
+  }, [workerId, navigation, t]);
+
+  useEffect(() => {
+    loadWorker();
+  }, [loadWorker]);
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -269,6 +269,7 @@ export function EditWorkerScreen() {
             <View className="flex-row flex-wrap">
               {WORKER_SPECIALTIES.map((specialty) => {
                 const isSelected = selectedSpecialties.includes(specialty);
+                const translatedSpecialty = t(`worker.specialties.${specialty}`) || specialty;
                 return (
                   <TouchableOpacity
                     key={specialty}
@@ -284,7 +285,7 @@ export function EditWorkerScreen() {
                           isSelected ? 'text-primary-700' : isDark ? 'text-slate-300' : 'text-slate-700'
                         }`}
                       >
-                        {specialty}
+                        {translatedSpecialty}
                       </Text>
                       {isSelected && (
                         <Check size={14} color={COLORS.primary[600]} className="ml-1.5" />

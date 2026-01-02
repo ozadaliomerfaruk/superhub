@@ -8,6 +8,9 @@ import {
   Image,
   Linking,
   Alert,
+  Modal,
+  TextInput,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -30,15 +33,18 @@ import {
   CheckCircle,
   ClipboardList,
   AlertCircle,
+  StickyNote,
+  X,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../../navigation/types';
-import { Worker, Expense, MaintenanceTaskWithWorker, MaintenanceCompletionWithWorker } from '../../types';
-import { workerRepository, expenseRepository, maintenanceRepository, maintenanceCompletionRepository } from '../../services/database';
+import { Worker, Expense, MaintenanceTaskWithWorker, MaintenanceCompletionWithWorker, WorkerNote } from '../../types';
+import { workerRepository, expenseRepository, maintenanceRepository, maintenanceCompletionRepository, workerNoteRepository } from '../../services/database';
 import { ScreenHeader, Card, PressableCard, Button, IconButton, Badge, EmptyState } from '../../components/ui';
 import { COLORS, EXPENSE_TYPES } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
-import { formatDate, formatRelativeDate } from '../../utils/date';
+import { formatDate, formatRelativeDate, getCurrentISODate } from '../../utils/date';
 import { useTheme, useTranslation } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -55,21 +61,31 @@ export function WorkerDetailScreen() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [assignedTasks, setAssignedTasks] = useState<MaintenanceTaskWithWorker[]>([]);
   const [completedTasks, setCompletedTasks] = useState<MaintenanceCompletionWithWorker[]>([]);
+  const [workerNotes, setWorkerNotes] = useState<WorkerNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Note modal states
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [editingNote, setEditingNote] = useState<WorkerNote | null>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [noteDate, setNoteDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
-      const [workerData, expensesData, assignedTasksData, completedTasksData] = await Promise.all([
+      const [workerData, expensesData, assignedTasksData, completedTasksData, notesData] = await Promise.all([
         workerRepository.getById(workerId),
         expenseRepository.getByWorkerId(workerId),
         maintenanceRepository.getByAssignedWorkerId(workerId),
         maintenanceCompletionRepository.getByWorkerId(workerId),
+        workerNoteRepository.getByWorkerId(workerId),
       ]);
       setWorker(workerData);
       setExpenses(expensesData);
       setAssignedTasks(assignedTasksData);
       setCompletedTasks(completedTasksData);
+      setWorkerNotes(notesData);
     } catch (error) {
       console.error('Failed to load worker:', error);
     } finally {
@@ -145,6 +161,80 @@ export function WorkerDetailScreen() {
     // Navigate to add expense with worker pre-selected
     // For now, we can't select a property, so this is a placeholder
     Alert.alert(t('expense.add'), t('worker.alerts.addExpenseInfo'));
+  };
+
+  // Worker Notes functions
+  const openAddNoteModal = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingNote(null);
+    setNoteContent('');
+    setNoteDate(new Date());
+    setNoteModalVisible(true);
+  };
+
+  const openEditNoteModal = async (note: WorkerNote) => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingNote(note);
+    setNoteContent(note.content);
+    setNoteDate(new Date(note.date));
+    setNoteModalVisible(true);
+  };
+
+  const handleSaveNote = async () => {
+    if (!noteContent.trim()) {
+      Alert.alert(t('common.error'), t('worker.workerNotes.contentRequired'));
+      return;
+    }
+
+    try {
+      const dateStr = noteDate.toISOString().split('T')[0];
+      if (editingNote) {
+        await workerNoteRepository.update(editingNote.id, {
+          content: noteContent.trim(),
+          date: dateStr,
+        });
+      } else {
+        await workerNoteRepository.create({
+          workerId,
+          content: noteContent.trim(),
+          date: dateStr,
+        });
+      }
+      setNoteModalVisible(false);
+      loadData();
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      Alert.alert(t('common.error'), t('worker.workerNotes.saveError'));
+    }
+  };
+
+  const handleDeleteNote = (note: WorkerNote) => {
+    Alert.alert(
+      t('worker.workerNotes.deleteNote'),
+      t('worker.workerNotes.deleteConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await workerNoteRepository.delete(note.id);
+              loadData();
+            } catch (error) {
+              console.error('Failed to delete note:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setNoteDate(selectedDate);
+    }
   };
 
   if (!worker) {
@@ -258,14 +348,17 @@ export function WorkerDetailScreen() {
           {/* Specialties */}
           {worker.specialty.length > 0 && (
             <View className="flex-row flex-wrap gap-2 mt-4">
-              {worker.specialty.map((spec, index) => (
-                <View
-                  key={index}
-                  className={`px-3 py-1.5 rounded-full ${isDark ? 'bg-primary-900/40' : 'bg-primary-50'}`}
-                >
-                  <Text className={`text-sm font-medium ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>{spec}</Text>
-                </View>
-              ))}
+              {worker.specialty.map((spec, index) => {
+                const translatedSpec = t(`worker.specialties.${spec}`) || spec;
+                return (
+                  <View
+                    key={index}
+                    className={`px-3 py-1.5 rounded-full ${isDark ? 'bg-primary-900/40' : 'bg-primary-50'}`}
+                  >
+                    <Text className={`text-sm font-medium ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>{translatedSpec}</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
 
@@ -402,6 +495,67 @@ export function WorkerDetailScreen() {
             </Card>
           </View>
         )}
+
+        {/* Worker Notes (Dated Notes) */}
+        <View className="px-5 mt-5">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {t('worker.workerNotes.title')}
+            </Text>
+            <TouchableOpacity
+              onPress={openAddNoteModal}
+              className={`flex-row items-center px-2.5 py-1 rounded-full ${isDark ? 'bg-primary-900/40' : 'bg-primary-100'}`}
+            >
+              <Plus size={14} color={COLORS.primary[isDark ? 400 : 600]} />
+              <Text className={`text-xs font-semibold ml-1 ${isDark ? 'text-primary-400' : 'text-primary-700'}`}>
+                {t('worker.workerNotes.addNote')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {workerNotes.length > 0 ? (
+            <View className="gap-2">
+              {workerNotes.map((note) => (
+                <Card key={note.id} variant="default" padding="md">
+                  <TouchableOpacity
+                    onPress={() => openEditNoteModal(note)}
+                    onLongPress={() => handleDeleteNote(note)}
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-start">
+                      <View className={`w-10 h-10 rounded-xl items-center justify-center ${isDark ? 'bg-purple-900/40' : 'bg-purple-100'}`}>
+                        <StickyNote size={18} color={isDark ? '#c084fc' : '#9333ea'} />
+                      </View>
+                      <View className="flex-1 ml-3">
+                        <View className="flex-row items-center mb-1">
+                          <Calendar size={12} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
+                          <Text className={`text-xs ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            {formatDate(note.date)}
+                          </Text>
+                        </View>
+                        <Text className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                          {note.content}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </Card>
+              ))}
+            </View>
+          ) : (
+            <Card variant="filled" padding="lg">
+              <View className="items-center py-4">
+                <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                  <StickyNote size={24} color={isDark ? COLORS.slate[500] : COLORS.slate[400]} />
+                </View>
+                <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('worker.workerNotes.noNotes')}</Text>
+                <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('worker.workerNotes.noNotesDescription')}
+                </Text>
+              </View>
+            </Card>
+          )}
+        </View>
 
         {/* Assigned Tasks */}
         <View className="px-5 mt-5">
@@ -619,6 +773,95 @@ export function WorkerDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Note Modal */}
+      <Modal
+        visible={noteModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setNoteModalVisible(false)}
+      >
+        <View className="flex-1 justify-end">
+          <TouchableOpacity
+            className="flex-1"
+            activeOpacity={1}
+            onPress={() => setNoteModalVisible(false)}
+          />
+          <View className={`rounded-t-3xl px-5 pt-6 pb-10 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            {/* Modal Header */}
+            <View className="flex-row items-center justify-between mb-5">
+              <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {editingNote ? t('worker.workerNotes.editNote') : t('worker.workerNotes.addNote')}
+              </Text>
+              <TouchableOpacity onPress={() => setNoteModalVisible(false)}>
+                <X size={24} color={isDark ? COLORS.slate[400] : COLORS.slate[600]} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Date Picker */}
+            <View className="mb-4">
+              <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                {t('worker.workerNotes.noteDate')}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                className={`flex-row items-center px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-200'}`}
+              >
+                <Calendar size={18} color={isDark ? COLORS.slate[400] : COLORS.slate[500]} />
+                <Text className={`flex-1 ml-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {formatDate(noteDate.toISOString())}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={noteDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+            </View>
+
+            {/* Note Content */}
+            <View className="mb-5">
+              <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                {t('worker.workerNotes.noteContent')}
+              </Text>
+              <TextInput
+                value={noteContent}
+                onChangeText={setNoteContent}
+                placeholder={t('worker.workerNotes.notePlaceholder')}
+                placeholderTextColor={isDark ? COLORS.slate[500] : COLORS.slate[400]}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                className={`px-4 py-3 rounded-xl border min-h-[100px] ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+              />
+            </View>
+
+            {/* Action Buttons */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => setNoteModalVisible(false)}
+                className={`flex-1 py-3.5 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}
+              >
+                <Text className={`text-center font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {t('common.cancel')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveNote}
+                className="flex-1 py-3.5 rounded-xl bg-primary-500"
+              >
+                <Text className="text-center font-semibold text-white">
+                  {t('common.save')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

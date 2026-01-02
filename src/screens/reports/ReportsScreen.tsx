@@ -30,7 +30,8 @@ import { expenseRepository, propertyRepository } from '../../services/database';
 import { ScreenHeader, Card } from '../../components/ui';
 import { COLORS, EXPENSE_TYPES, SHADOWS } from '../../constants/theme';
 import { formatCurrency } from '../../utils/currency';
-import { useTheme } from '../../contexts';
+import { useTheme, useTranslation } from '../../contexts';
+import { getDateLocale } from '../../utils/date';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -53,6 +54,7 @@ export function ReportsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -62,15 +64,22 @@ export function ReportsScreen() {
   const [totalLastMonth, setTotalLastMonth] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
-      const [propertiesData, expensesData] = await Promise.all([
+      const [propertiesData, allExpensesData] = await Promise.all([
         propertyRepository.getAll(),
         expenseRepository.getAll(),
       ]);
 
       setProperties(propertiesData);
+
+      // Filter expenses by selected property
+      const expensesData = selectedPropertyId
+        ? allExpensesData.filter(e => e.propertyId === selectedPropertyId)
+        : allExpensesData;
+
       setExpenses(expensesData);
 
       // Calculate monthly data for last 6 months
@@ -92,7 +101,7 @@ export function ReportsScreen() {
         });
 
         monthly.push({
-          month: format(date, 'MMM'),
+          month: format(date, 'MMM', { locale: getDateLocale() }),
           total,
           byType,
         });
@@ -153,7 +162,7 @@ export function ReportsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [selectedPropertyId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -191,10 +200,53 @@ export function ReportsScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <ScreenHeader
-        title="Reports & Analytics"
+        title={t('reports.title')}
         showBack
         onBack={() => navigation.goBack()}
       />
+
+      {/* Property Filter */}
+      {properties.length > 0 && (
+        <View className={`px-5 py-3 ${isDark ? 'bg-slate-800' : 'bg-white'} border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedPropertyId(null)}
+              className={`px-4 py-2 rounded-full ${
+                selectedPropertyId === null
+                  ? 'bg-primary-500'
+                  : isDark ? 'bg-slate-700' : 'bg-slate-100'
+              }`}
+            >
+              <Text className={`text-sm font-medium ${
+                selectedPropertyId === null ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}>
+                {t('reports.allProperties')}
+              </Text>
+            </TouchableOpacity>
+            {properties.map(property => (
+              <TouchableOpacity
+                key={property.id}
+                onPress={() => setSelectedPropertyId(property.id)}
+                className={`px-4 py-2 rounded-full ${
+                  selectedPropertyId === property.id
+                    ? 'bg-primary-500'
+                    : isDark ? 'bg-slate-700' : 'bg-slate-100'
+                }`}
+              >
+                <Text className={`text-sm font-medium ${
+                  selectedPropertyId === property.id ? 'text-white' : isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}>
+                  {property.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <ScrollView
         className="flex-1"
@@ -216,7 +268,7 @@ export function ReportsScreen() {
           >
             <View className="flex-row items-center justify-between mb-2">
               <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                This Month
+                {t('reports.thisMonth')}
               </Text>
               <View className="w-8 h-8 rounded-full bg-primary-100 items-center justify-center">
                 <Calendar size={16} color={COLORS.primary[600]} />
@@ -236,7 +288,7 @@ export function ReportsScreen() {
                   className="text-xs ml-1 font-medium"
                   style={{ color: percentChange > 0 ? COLORS.error : COLORS.primary[600] }}
                 >
-                  {Math.abs(percentChange).toFixed(1)}% vs last month
+                  {Math.abs(percentChange).toFixed(1)}% {t('reports.vsLastMonth')}
                 </Text>
               </View>
             )}
@@ -248,7 +300,7 @@ export function ReportsScreen() {
           >
             <View className="flex-row items-center justify-between mb-2">
               <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Properties
+                {t('reports.properties')}
               </Text>
               <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center">
                 <Home size={16} color={COLORS.info} />
@@ -258,7 +310,7 @@ export function ReportsScreen() {
               {properties.length}
             </Text>
             <Text className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              {expenses.length} total expenses
+              {expenses.length} {t('reports.totalExpenses')}
             </Text>
           </View>
         </View>
@@ -271,7 +323,7 @@ export function ReportsScreen() {
           <View className="flex-row items-center mb-4">
             <BarChart3 size={20} color={COLORS.primary[600]} />
             <Text className={`text-base font-semibold ml-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Monthly Spending Trend
+              {t('reports.monthlyTrend')}
             </Text>
           </View>
 
@@ -310,16 +362,16 @@ export function ReportsScreen() {
           <View className="flex-row items-center mb-4">
             <PieChart size={20} color={COLORS.primary[600]} />
             <Text className={`text-base font-semibold ml-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Spending by Category
+              {t('reports.spendingByCategory')}
             </Text>
             <Text className={`text-sm ml-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              (This Month)
+              ({t('reports.thisMonth')})
             </Text>
           </View>
 
           {categoryData.length === 0 ? (
             <Text className={`text-center py-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              No expenses this month
+              {t('reports.noExpensesThisMonth')}
             </Text>
           ) : (
             <>
@@ -339,6 +391,7 @@ export function ReportsScreen() {
               {/* Category List */}
               {categoryData.map((cat, index) => {
                 const percent = totalThisMonth > 0 ? (cat.total / totalThisMonth) * 100 : 0;
+                const translatedCategory = t(`expense.types.${cat.category}`) || cat.category;
                 return (
                   <View
                     key={index}
@@ -354,11 +407,11 @@ export function ReportsScreen() {
                         {getTypeIcon(cat.category)}
                       </View>
                       <View className="ml-3">
-                        <Text className={`text-sm font-medium capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {cat.category}
+                        <Text className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {translatedCategory}
                         </Text>
                         <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {cat.count} expense{cat.count !== 1 ? 's' : ''}
+                          {cat.count} {cat.count !== 1 ? t('reports.expenses') : t('reports.expense')}
                         </Text>
                       </View>
                     </View>
@@ -383,13 +436,13 @@ export function ReportsScreen() {
           style={SHADOWS.md}
         >
           <Text className={`text-base font-semibold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Quick Stats
+            {t('reports.quickStats')}
           </Text>
 
           <View className="flex-row flex-wrap">
             <View className="w-1/2 p-2">
               <View className={`rounded-xl p-3 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Avg. Expense</Text>
+                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('reports.avgExpense')}</Text>
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {formatCurrency(expenses.length > 0 ? expenses.reduce((s, e) => s + e.amount, 0) / expenses.length : 0)}
                 </Text>
@@ -397,7 +450,7 @@ export function ReportsScreen() {
             </View>
             <View className="w-1/2 p-2">
               <View className={`rounded-xl p-3 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total All Time</Text>
+                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('reports.totalAllTime')}</Text>
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))}
                 </Text>
@@ -405,7 +458,7 @@ export function ReportsScreen() {
             </View>
             <View className="w-1/2 p-2">
               <View className={`rounded-xl p-3 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Largest Expense</Text>
+                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('reports.largestExpense')}</Text>
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {formatCurrency(expenses.length > 0 ? Math.max(...expenses.map(e => e.amount)) : 0)}
                 </Text>
@@ -413,7 +466,7 @@ export function ReportsScreen() {
             </View>
             <View className="w-1/2 p-2">
               <View className={`rounded-xl p-3 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>This Year</Text>
+                <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('reports.thisYear')}</Text>
                 <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {formatCurrency(
                     expenses

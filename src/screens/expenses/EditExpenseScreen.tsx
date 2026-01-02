@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -33,8 +33,7 @@ import { Button, Input, IconButton } from '../../components/ui';
 import { COLORS, EXPENSE_TYPES, BILL_CATEGORIES } from '../../constants/theme';
 import { getCurrencySymbol } from '../../utils/currency';
 import { formatDateObjectWithDay } from '../../utils/date';
-import { useToast, useTranslation } from '../../contexts';
-import { getImageQuality } from '../../utils/image';
+import { useToast, useTranslation, useTheme } from '../../contexts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type EditExpenseRouteProp = RouteProp<RootStackParamList, 'EditExpense'>;
@@ -54,9 +53,9 @@ const getExpenseTypes = (t: any): ExpenseTypeOption[] => [
   { value: 'other', label: t('expense.types.other'), color: EXPENSE_TYPES.other.color, Icon: MoreHorizontal },
 ];
 
-const categoryOptions: Record<ExpenseType, string[]> = {
+const categoryOptions: Record<ExpenseType, readonly string[]> = {
   repair: ['Plumbing', 'Electrical', 'HVAC', 'Appliance', 'Structural', 'Roof', 'Other'],
-  bill: BILL_CATEGORIES as unknown as string[],
+  bill: BILL_CATEGORIES,
   maintenance: ['HVAC Service', 'Lawn Care', 'Pool Service', 'Pest Control', 'Cleaning', 'Other'],
   purchase: ['Appliance', 'Furniture', 'Tools', 'Supplies', 'Decor', 'Other'],
   other: ['Other'],
@@ -68,6 +67,7 @@ export function EditExpenseScreen() {
   const insets = useSafeAreaInsets();
   const { expenseId } = route.params;
   const { t } = useTranslation();
+  const { isDark } = useTheme();
 
   const [type, setType] = useState<ExpenseType>('repair');
   const [category, setCategory] = useState('');
@@ -89,11 +89,7 @@ export function EditExpenseScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(new Date());
 
-  useEffect(() => {
-    loadExpense();
-  }, [expenseId]);
-
-  const loadExpense = async () => {
+  const loadExpense = useCallback(async () => {
     try {
       const expense = await expenseRepository.getById(expenseId);
       if (expense) {
@@ -124,7 +120,11 @@ export function EditExpenseScreen() {
     } finally {
       setInitialLoading(false);
     }
-  };
+  }, [expenseId, navigation, t]);
+
+  useEffect(() => {
+    loadExpense();
+  }, [loadExpense]);
 
   const handlePickReceipt = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -162,7 +162,7 @@ export function EditExpenseScreen() {
   };
 
   const handleSave = async () => {
-    if (!amount.trim() || parseFloat(amount) <= 0) {
+    if (!amount.trim() || parseFloat(amount) <= 0 || isNaN(parseFloat(amount))) {
       Alert.alert(t('common.required'), t('common.validAmount'));
       return;
     }
@@ -176,6 +176,23 @@ export function EditExpenseScreen() {
 
     try {
       const newAmount = parseFloat(amount);
+      const workerChanged = originalWorkerId !== selectedWorkerId;
+      const amountChanged = originalAmount !== newAmount;
+
+      // Perform all updates - if any fails, we handle it gracefully
+      // Note: Ideally this would be in a database transaction, but SQLite
+      // in React Native doesn't support transactions across multiple repository calls.
+      // We update worker totals first so the expense always reflects the final state.
+      if (workerChanged || amountChanged) {
+        // Handle original worker: subtract old amount
+        if (originalWorkerId) {
+          await workerRepository.updateTotalPaid(originalWorkerId, -originalAmount);
+        }
+        // Handle new worker: add new amount
+        if (selectedWorkerId) {
+          await workerRepository.updateTotalPaid(selectedWorkerId, newAmount);
+        }
+      }
 
       await expenseRepository.update(expenseId, {
         roomId: selectedRoomId,
@@ -187,18 +204,6 @@ export function EditExpenseScreen() {
         description: description.trim(),
         receiptUri,
       });
-
-      // Update worker's total paid if worker changed
-      if (originalWorkerId !== selectedWorkerId || originalAmount !== newAmount) {
-        // Subtract from original worker
-        if (originalWorkerId) {
-          await workerRepository.updateTotalPaid(originalWorkerId, -originalAmount);
-        }
-        // Add to new worker
-        if (selectedWorkerId) {
-          await workerRepository.updateTotalPaid(selectedWorkerId, newAmount);
-        }
-      }
 
       navigation.goBack();
     } catch (error) {
@@ -533,7 +538,7 @@ export function EditExpenseScreen() {
                 if (selectedDate) setTempDate(selectedDate);
               }}
               style={{ height: 200 }}
-              textColor="#1e293b"
+              textColor={isDark ? '#ffffff' : '#1e293b'}
             />
           </View>
         </View>

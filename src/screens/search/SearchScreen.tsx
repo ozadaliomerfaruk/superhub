@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -38,31 +38,17 @@ import { formatCurrency } from '../../utils/currency';
 import { useTheme, useTranslation } from '../../contexts';
 
 // Expense filter options
-const AMOUNT_RANGES = [
-  { key: 'all', label: 'Any Amount', min: 0, max: Infinity },
-  { key: 'under100', label: 'Under $100', min: 0, max: 100 },
-  { key: '100-500', label: '$100 - $500', min: 100, max: 500 },
-  { key: '500-1000', label: '$500 - $1,000', min: 500, max: 1000 },
-  { key: 'over1000', label: 'Over $1,000', min: 1000, max: Infinity },
+const AMOUNT_RANGE_KEYS = [
+  { key: 'all', min: 0, max: Infinity },
+  { key: 'under100', min: 0, max: 100 },
+  { key: '100-500', min: 100, max: 500 },
+  { key: '500-1000', min: 500, max: 1000 },
+  { key: 'over1000', min: 1000, max: Infinity },
 ];
 
-const DATE_RANGES = [
-  { key: 'all', label: 'All Time' },
-  { key: 'today', label: 'Today' },
-  { key: 'week', label: 'This Week' },
-  { key: 'month', label: 'This Month' },
-  { key: 'quarter', label: 'This Quarter' },
-  { key: 'year', label: 'This Year' },
-];
+const DATE_RANGE_KEYS = ['all', 'today', 'week', 'month', 'year'];
 
-const EXPENSE_TYPE_FILTERS = [
-  { key: 'all', label: 'All Types' },
-  { key: 'repair', label: 'Repairs' },
-  { key: 'bill', label: 'Bills' },
-  { key: 'maintenance', label: 'Maintenance' },
-  { key: 'purchase', label: 'Purchases' },
-  { key: 'other', label: 'Other' },
-];
+const EXPENSE_TYPE_FILTER_KEYS = ['all', 'repair', 'bill', 'maintenance', 'purchase', 'other'];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -76,13 +62,13 @@ interface SearchResults {
 
 type SearchCategory = 'all' | 'properties' | 'rooms' | 'assets' | 'expenses' | 'workers';
 
-const CATEGORIES: Array<{ key: SearchCategory; label: string; icon: React.ElementType }> = [
-  { key: 'all', label: 'All', icon: SearchIcon },
-  { key: 'properties', label: 'Properties', icon: Home },
-  { key: 'rooms', label: 'Rooms', icon: DoorOpen },
-  { key: 'assets', label: 'Assets', icon: Package },
-  { key: 'expenses', label: 'Expenses', icon: Receipt },
-  { key: 'workers', label: 'Workers', icon: HardHat },
+const CATEGORY_KEYS: Array<{ key: SearchCategory; icon: React.ElementType }> = [
+  { key: 'all', icon: SearchIcon },
+  { key: 'properties', icon: Home },
+  { key: 'rooms', icon: DoorOpen },
+  { key: 'assets', icon: Package },
+  { key: 'expenses', icon: Receipt },
+  { key: 'workers', icon: HardHat },
 ];
 
 export function SearchScreen() {
@@ -106,81 +92,70 @@ export function SearchScreen() {
   const [amountFilter, setAmountFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-
-  // Debounced search
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults({ properties: [], rooms: [], assets: [], expenses: [], workers: [] });
-      setHasSearched(false);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      performSearch(query);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [query, category, amountFilter, dateFilter, typeFilter]);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Helper to check if expense matches date filter
-  const matchesDateFilter = (expenseDate: string): boolean => {
+  const matchesDateFilter = useCallback((expenseDate: string): boolean => {
     if (dateFilter === 'all') return true;
 
     const date = new Date(expenseDate);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     switch (dateFilter) {
       case 'today':
-        return date >= today;
+        // Fixed: now properly checks only today, not future dates
+        return date >= today && date < tomorrow;
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        return date >= weekAgo;
+        return date >= weekAgo && date < tomorrow;
       case 'month':
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        return date >= monthStart;
-      case 'quarter':
-        const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-        return date >= quarterStart;
+        return date >= monthStart && date < tomorrow;
       case 'year':
         const yearStart = new Date(now.getFullYear(), 0, 1);
-        return date >= yearStart;
+        return date >= yearStart && date < tomorrow;
       default:
         return true;
     }
-  };
+  }, [dateFilter]);
 
   // Helper to check if expense matches amount filter
-  const matchesAmountFilter = (amount: number): boolean => {
-    const range = AMOUNT_RANGES.find(r => r.key === amountFilter);
+  const matchesAmountFilter = useCallback((amount: number): boolean => {
+    const range = AMOUNT_RANGE_KEYS.find(r => r.key === amountFilter);
     if (!range) return true;
     return amount >= range.min && amount < range.max;
-  };
+  }, [amountFilter]);
 
-  const performSearch = async (searchQuery: string) => {
+  const performSearch = useCallback(async (searchQuery: string) => {
     setLoading(true);
     setHasSearched(true);
+    setSearchError(null);
 
     try {
       const searchLower = searchQuery.toLowerCase();
 
-      // Fetch all data
-      const [properties, allRooms, allAssets, allExpenses, workers] = await Promise.all([
-        propertyRepository.getAll(),
-        Promise.all((await propertyRepository.getAll()).map(async (p) => {
+      // Fetch properties once and reuse - Fixed N+1 query pattern
+      const properties = await propertyRepository.getAll();
+      const workers = await workerRepository.getAll();
+
+      // Build rooms, assets, expenses in parallel using the single properties fetch
+      const [allRooms, allAssets, allExpenses] = await Promise.all([
+        Promise.all(properties.map(async (p) => {
           const rooms = await roomRepository.getByPropertyId(p.id);
           return rooms.map((r) => ({ ...r, propertyName: p.name }));
         })).then((arr) => arr.flat()),
-        Promise.all((await propertyRepository.getAll()).map(async (p) => {
+        Promise.all(properties.map(async (p) => {
           const assets = await assetRepository.getByPropertyId(p.id);
           return assets.map((a) => ({ ...a, propertyName: p.name }));
         })).then((arr) => arr.flat()),
-        Promise.all((await propertyRepository.getAll()).map(async (p) => {
+        Promise.all(properties.map(async (p) => {
           const expenses = await expenseRepository.getByPropertyId(p.id);
           return expenses.map((e) => ({ ...e, propertyName: p.name }));
         })).then((arr) => arr.flat()),
-        workerRepository.getAll(),
       ]);
 
       // Filter based on query
@@ -234,10 +209,27 @@ export function SearchScreen() {
       }
     } catch (error) {
       console.error('Search failed:', error);
+      setSearchError(t('common.error'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [matchesDateFilter, matchesAmountFilter, typeFilter, recentSearches, t]);
+
+  // Debounced search with proper dependencies
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults({ properties: [], rooms: [], assets: [], expenses: [], workers: [] });
+      setHasSearched(false);
+      setSearchError(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      performSearch(query);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [query, category, amountFilter, dateFilter, typeFilter, performSearch]);
 
   const handleClearSearch = () => {
     setQuery('');
@@ -313,7 +305,7 @@ export function SearchScreen() {
           contentContainerStyle={{ paddingRight: 20 }}
         >
           <View className="flex-row gap-2">
-            {CATEGORIES.map((cat) => {
+            {CATEGORY_KEYS.map((cat) => {
               const Icon = cat.icon;
               const isActive = category === cat.key;
 
@@ -332,7 +324,7 @@ export function SearchScreen() {
                       isActive ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-600')
                     }`}
                   >
-                    {cat.label}
+                    {t(`search.categories.${cat.key}`)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -365,28 +357,28 @@ export function SearchScreen() {
             {/* Date Filter */}
             <View className="mb-3">
               <Text className={`text-xs font-semibold uppercase tracking-wide mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Date Range
+                {t('expense.date')}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row gap-2">
-                  {DATE_RANGES.map((range) => (
+                  {DATE_RANGE_KEYS.map((rangeKey) => (
                     <TouchableOpacity
-                      key={range.key}
-                      onPress={() => setDateFilter(range.key)}
+                      key={rangeKey}
+                      onPress={() => setDateFilter(rangeKey)}
                       className={`px-3 py-1.5 rounded-lg ${
-                        dateFilter === range.key
+                        dateFilter === rangeKey
                           ? 'bg-primary-500'
                           : (isDark ? 'bg-slate-700' : 'bg-slate-100')
                       }`}
                     >
                       <Text
                         className={`text-xs font-medium ${
-                          dateFilter === range.key
+                          dateFilter === rangeKey
                             ? 'text-white'
                             : (isDark ? 'text-slate-300' : 'text-slate-600')
                         }`}
                       >
-                        {range.label}
+                        {t(`search.dateRanges.${rangeKey}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -397,11 +389,11 @@ export function SearchScreen() {
             {/* Amount Filter */}
             <View className="mb-3">
               <Text className={`text-xs font-semibold uppercase tracking-wide mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Amount
+                {t('expense.amount')}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row gap-2">
-                  {AMOUNT_RANGES.map((range) => (
+                  {AMOUNT_RANGE_KEYS.map((range) => (
                     <TouchableOpacity
                       key={range.key}
                       onPress={() => setAmountFilter(range.key)}
@@ -418,7 +410,7 @@ export function SearchScreen() {
                             : (isDark ? 'text-slate-300' : 'text-slate-600')
                         }`}
                       >
-                        {range.label}
+                        {t(`search.amountRanges.${range.key}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -429,28 +421,28 @@ export function SearchScreen() {
             {/* Type Filter */}
             <View>
               <Text className={`text-xs font-semibold uppercase tracking-wide mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Expense Type
+                {t('expense.type')}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row gap-2">
-                  {EXPENSE_TYPE_FILTERS.map((type) => (
+                  {EXPENSE_TYPE_FILTER_KEYS.map((typeKey) => (
                     <TouchableOpacity
-                      key={type.key}
-                      onPress={() => setTypeFilter(type.key)}
+                      key={typeKey}
+                      onPress={() => setTypeFilter(typeKey)}
                       className={`px-3 py-1.5 rounded-lg ${
-                        typeFilter === type.key
+                        typeFilter === typeKey
                           ? 'bg-primary-500'
                           : (isDark ? 'bg-slate-700' : 'bg-slate-100')
                       }`}
                     >
                       <Text
                         className={`text-xs font-medium ${
-                          typeFilter === type.key
+                          typeFilter === typeKey
                             ? 'text-white'
                             : (isDark ? 'text-slate-300' : 'text-slate-600')
                         }`}
                       >
-                        {type.label}
+                        {typeKey === 'all' ? t('common.all') : t(`expense.types.${typeKey}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -493,8 +485,25 @@ export function SearchScreen() {
           </View>
         )}
 
+        {/* Search Error */}
+        {searchError && !loading && (
+          <View className="px-5 mt-6">
+            <Card variant="filled" padding="lg">
+              <View className="items-center py-6">
+                <X size={32} color={COLORS.error} />
+                <Text className={`text-base font-semibold text-center mt-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {searchError}
+                </Text>
+                <Text className={`text-sm text-center mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('common.tryAgain')}
+                </Text>
+              </View>
+            </Card>
+          </View>
+        )}
+
         {/* No Results */}
-        {hasSearched && totalResults === 0 && !loading && (
+        {hasSearched && totalResults === 0 && !loading && !searchError && (
           <View className="px-5 mt-6">
             <Card variant="filled" padding="lg">
               <View className="items-center py-6">

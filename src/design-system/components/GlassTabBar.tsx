@@ -98,12 +98,12 @@ export function GlassTabBar({
             <BlurViewWrapper
               intensity={glassConfig.blur}
               tint={isDark ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
+              style={[StyleSheet.absoluteFill, { borderRadius, overflow: 'hidden' }]}
             />
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: glassConfig.background },
+                { backgroundColor: glassConfig.background, borderRadius, overflow: 'hidden' },
               ]}
             />
           </>
@@ -111,7 +111,7 @@ export function GlassTabBar({
           <View
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: fallbackBackground },
+              { backgroundColor: fallbackBackground, borderRadius, overflow: 'hidden' },
             ]}
           />
         )}
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   tabsContainer: {
     flex: 1,

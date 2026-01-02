@@ -28,6 +28,13 @@ function mapRowToRoom(row: RoomRow): Room {
 }
 
 export const roomRepository = {
+  async getAll(): Promise<Room[]> {
+    const rows = await queryAll<RoomRow>(
+      'SELECT * FROM rooms ORDER BY name ASC'
+    );
+    return rows.map(mapRowToRoom);
+  },
+
   async getByPropertyId(propertyId: UUID): Promise<Room[]> {
     const rows = await queryAll<RoomRow>(
       'SELECT * FROM rooms WHERE property_id = ? ORDER BY name ASC',
